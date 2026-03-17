@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Amit Krishna — CS Engineer & Developer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow-x:hidden}
+body{background:#000;overflow-y:scroll;overflow-x:hidden;cursor:none}
+canvas{position:fixed;inset:0;z-index:0;display:block}
+#scroll-space{height:900vh;pointer-events:none;position:relative;z-index:-1}
+
+/* VIGNETTE */
+#vignette{
+  position:fixed;inset:0;z-index:5;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.85) 100%);
+}
+
+/* CUSTOM CURSOR */
+#cur{position:fixed;width:10px;height:10px;background:#e8922a;border-radius:50%;
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
+  box-shadow:0 0 12px #e8922a,0 0 24px rgba(232,146,42,0.5);
+  transition:width .15s,height .15s}
+#cur-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(232,146,42,0.4);
+  border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);
+  transition:left .12s ease,top .12s ease}
+
+/* HERO PANEL */
+#hero-panel{
+  position:fixed;inset:0;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;transition:opacity .8s ease;
+  text-align:center;padding:0 24px;
+}
+.hero-sub{
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:4px;
+  color:rgba(232,146,42,0.6);text-transform:uppercase;margin-bottom:20px;
+}
+.hero-name{
+  font-family:'Cinzel',serif;
+  font-size:clamp(48px,8vw,108px);font-weight:700;
+  color:#e8d5b0;
+  text-shadow:0 0 40px rgba(232,146,42,0.4),0 0 80px rgba(232,100,20,0.2);
+  line-height:1;letter-spacing:2px;margin-bottom:16px;
+}
+.hero-title{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(15px,2vw,20px);
+  color:rgba(200,170,130,0.8);font-weight:300;min-height:28px;margin-bottom:20px;
+}
+.typing-cur::after{content:'|';animation:blink 1s step-end infinite;color:#e8922a}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hero-desc{
+  font-family:'Space Grotesk',sans-serif;font-size:15px;color:rgba(160,130,90,0.7);
+  max-width:460px;line-height:1.7;margin-bottom:40px;
+}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:60px}
+.dungeon-btn{
+  font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;
+  border:1px solid rgba(232,146,42,0.35);
+  background:rgba(20,12,5,0.8);color:#c8a870;
+  padding:11px 24px;border-radius:4px;cursor:pointer;
+  transition:all .3s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+  backdrop-filter:blur(8px);
+}
+.dungeon-btn:hover{
+  border-color:rgba(232,146,42,0.7);color:#e8d5b0;
+  background:rgba(232,146,42,0.08);
+  box-shadow:0 0 20px rgba(232,146,42,0.15),inset 0 0 20px rgba(232,146,42,0.05);
+}
+.dungeon-btn.primary{border-color:rgba(232,146,42,0.5);color:#e8922a}
+.scroll-hint{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;
+  color:rgba(200,150,80,0.4);text-transform:uppercase;
+  animation:floatDown 2s ease-in-out infinite;
+}
+@keyframes floatDown{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(8px);opacity:.7}}
+
+/* SECTION PANELS */
+.section-panel{
+  position:fixed;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:min(720px,92vw);
+  max-height:82vh;
+  overflow-y:auto;
+  opacity:0;pointer-events:none;
+  z-index:20;
+  transition:opacity .6s ease;
+}
+.section-panel.active{opacity:1;pointer-events:all}
+.section-panel::-webkit-scrollbar{width:4px}
+.section-panel::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}
+.section-panel::-webkit-scrollbar-thumb{background:rgba(232,146,42,0.3);border-radius:2px}
+
+/* Panel card inner */
+.panel-inner{
+  background:rgba(8,5,2,0.88);
+  border:1px solid rgba(232,146,42,0.12);
+  border-radius:8px;padding:44px;
+  backdrop-filter:blur(24px);
+  box-shadow:
+    0 0 60px rgba(0,0,0,0.8),
+    inset 0 0 60px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(255,200,100,0.03);
+  transition:border-color .4s ease,box-shadow .4s ease;
+  position:relative;overflow:hidden;
+}
+.section-panel.active .panel-inner{
+  border-color:rgba(232,146,42,0.25);
+  box-shadow:
+    0 0 80px rgba(0,0,0,0.9),
+    0 0 40px rgba(232,100,20,0.06),
+    inset 0 0 40px rgba(232,100,20,0.02);
+}
+.panel-inner::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(232,146,42,0.02) 0%,transparent 50%,rgba(232,80,20,0.01) 100%);
+  pointer-events:none;
+}
+
+/* Corner decorations */
+.panel-inner::after{
+  content:'';position:absolute;top:12px;left:12px;width:20px;height:20px;
+  border-top:1px solid rgba(232,146,42,0.3);border-left:1px solid rgba(232,146,42,0.3);
+  pointer-events:none;
+}
+
+.panel-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;
+  color:rgba(232,146,42,0.5);text-transform:uppercase;margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.panel-label::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(232,146,42,0.3),transparent)}
+
+.panel-title{
+  font-family:'Cinzel',serif;font-size:32px;font-weight:600;
+  color:#e8d5b0;margin-bottom:8px;
+  text-shadow:0 0 30px rgba(232,146,42,0.2);
+}
+.panel-divider{
+  height:1px;background:linear-gradient(to right,rgba(232,146,42,0.4),transparent);
+  margin:16px 0 24px;
+}
+
+/* Stagger children illumination */
+.panel-body > *{
+  opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.section-panel.active .panel-body > *{opacity:1;transform:translateY(0)}
+.section-panel.active .panel-body > *:nth-child(1){transition-delay:.05s}
+.section-panel.active .panel-body > *:nth-child(2){transition-delay:.13s}
+.section-panel.active .panel-body > *:nth-child(3){transition-delay:.21s}
+.section-panel.active .panel-body > *:nth-child(4){transition-delay:.29s}
+.section-panel.active .panel-body > *:nth-child(5){transition-delay:.37s}
+.section-panel.active .panel-body > *:nth-child(6){transition-delay:.45s}
+.section-panel.active .panel-body > *:nth-child(7){transition-delay:.53s}
+.section-panel.active .panel-body > *:nth-child(8){transition-delay:.61s}
+
+/* Typography inside panels */
+.rune-text{color:#c8a870;font-family:'Space Grotesk',sans-serif;font-size:15px;line-height:1.75}
+.accent{color:#e8922a}
+.muted{color:#7a6040}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* Skill tags */
+.tag-group{margin-bottom:20px}
+.tag-group-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;
+  color:rgba(232,146,42,0.4);text-transform:uppercase;margin-bottom:10px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  border:1px solid rgba(232,146,42,0.15);background:rgba(232,146,42,0.04);
+  color:#b8905a;padding:5px 13px;border-radius:3px;
+  transition:all .25s;cursor:default;
+}
+.tag:hover{border-color:rgba(232,146,42,0.5);color:#e8922a;background:rgba(232,146,42,0.08);box-shadow:0 0 10px rgba(232,146,42,0.1)}
+
+/* Project cards */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.proj-card{
+  background:rgba(232,146,42,0.03);border:1px solid rgba(232,146,42,0.1);
+  border-radius:6px;padding:22px;transition:all .3s;cursor:default;
+}
+.proj-card:hover{border-color:rgba(232,146,42,0.3);background:rgba(232,146,42,0.07);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.proj-icon{font-size:20px;margin-bottom:10px}
+.proj-title{font-family:'Cinzel',serif;font-size:15px;color:#c8a870;margin-bottom:8px;font-weight:600}
+.proj-desc{font-size:13px;color:#7a6040;line-height:1.65;margin-bottom:14px}
+.tech-tags{display:flex;flex-wrap:wrap;gap:5px}
+.tech-tag{font-family:'JetBrains Mono',monospace;font-size:10px;
+  background:rgba(99,70,200,0.1);border:1px solid rgba(99,70,200,0.2);
+  color:#8875d0;padding:3px 9px;border-radius:3px}
+
+/* Cert items */
+.cert-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid rgba(232,146,42,0.07)}
+.cert-item:last-child{border-bottom:none}
+.cert-flame{font-size:14px;margin-top:2px;flex-shrink:0}
+.cert-name{font-size:14px;color:#c8a870;font-family:'Space Grotesk',sans-serif}
+.cert-org{font-size:12px;color:#5a4020;font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+/* Education */
+.edu-card{background:rgba(232,146,42,0.03);border:1px solid rgba(232,146,42,0.1);border-radius:6px;padding:20px;margin-bottom:12px}
+.edu-school{font-family:'Cinzel',serif;font-size:16px;color:#c8a870}
+.edu-degree{font-size:13px;color:#7a6040;margin-top:4px}
+.edu-score{font-family:'JetBrains Mono',monospace;font-size:22px;color:#e8922a;font-weight:700}
+
+/* Timeline */
+.timeline-item{display:flex;gap:18px;position:relative;padding-bottom:28px}
+.timeline-item::before{content:'';position:absolute;left:19px;top:42px;width:2px;height:calc(100% - 12px);background:linear-gradient(to bottom,rgba(232,146,42,0.3),transparent)}
+.timeline-item:last-child::before{display:none}
+.timeline-icon{width:40px;height:40px;border-radius:50%;background:rgba(232,146,42,0.08);border:1px solid rgba(232,146,42,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 0 12px rgba(232,146,42,0.1)}
+.timeline-content{padding-top:8px}
+.timeline-phase{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.4);letter-spacing:2px;margin-bottom:6px}
+.timeline-title{font-family:'Cinzel',serif;font-size:15px;color:#c8a870;margin-bottom:6px}
+.timeline-desc{font-size:13px;color:#7a6040;line-height:1.6}
+
+/* CONTACT SECTION */
+#contact-panel{
+  position:fixed;inset:0;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .8s ease;
+  padding:0 24px;text-align:center;
+}
+#contact-panel.active{opacity:1;pointer-events:all}
+.contact-title{font-family:'Cinzel',serif;font-size:clamp(32px,5vw,60px);font-weight:700;
+  color:#e8d5b0;text-shadow:0 0 40px rgba(232,146,42,0.3);margin-bottom:12px}
+.contact-sub{font-size:15px;color:#7a6040;margin-bottom:36px;max-width:460px;line-height:1.7}
+.contact-links{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:32px}
+.contact-link{
+  font-family:'Space Grotesk',sans-serif;font-size:13px;
+  border:1px solid rgba(232,146,42,0.2);background:rgba(10,6,2,0.8);color:#a07840;
+  padding:12px 22px;border-radius:4px;text-decoration:none;
+  display:flex;align-items:center;gap:8px;transition:all .3s;
+}
+.contact-link:hover{border-color:rgba(232,146,42,0.5);color:#e8d5b0;background:rgba(232,146,42,0.06);transform:translateY(-2px)}
+.contact-divider{height:1px;width:min(360px,80vw);background:linear-gradient(to right,transparent,rgba(232,146,42,0.3),transparent);margin-bottom:24px}
+.back-btn{
+  font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;
+  border:none;background:none;color:rgba(232,146,42,0.4);cursor:pointer;
+  transition:color .3s;
+}
+.back-btn:hover{color:rgba(232,146,42,0.8)}
+
+/* PROGRESS NAV */
+#progress-nav{
+  position:fixed;right:20px;top:50%;transform:translateY(-50%);
+  z-index:30;display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.p-dot{width:6px;height:6px;border-radius:50%;border:1px solid rgba(232,146,42,0.3);background:transparent;transition:all .3s;cursor:pointer;position:relative}
+.p-dot.active{background:#e8922a;border-color:#e8922a;box-shadow:0 0 8px #e8922a,0 0 16px rgba(232,146,42,0.4);transform:scale(1.5)}
+.p-dot .tip{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:9px;font-family:'JetBrains Mono',monospace;color:rgba(232,146,42,0.6);white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.p-dot:hover .tip,.p-dot.active .tip{opacity:1}
+.p-line{width:1px;height:20px;background:linear-gradient(to bottom,transparent,rgba(232,146,42,0.2),transparent)}
+
+/* TERMINAL */
+#terminal{
+  position:fixed;inset:0;z-index:9000;background:rgba(2,1,0,0.97);
+  display:none;flex-direction:column;
+  font-family:'JetBrains Mono',monospace;
+}
+#terminal.open{display:flex}
+.term-header{background:#050301;border-bottom:1px solid rgba(0,255,65,0.15);padding:12px 20px;display:flex;align-items:center;gap:8px}
+.td{width:12px;height:12px;border-radius:50%}
+#term-body{flex:1;overflow-y:auto;padding:20px;font-size:13px;line-height:1.9}
+.tl{color:#00d050;margin:1px 0}
+.to{color:rgba(0,230,80,0.65);white-space:pre-wrap;margin:3px 0}
+.te{color:#e85030;margin:1px 0}
+.ts2{color:rgba(0,210,255,0.5);margin:1px 0}
+.term-input-row{background:#030201;border-top:1px solid rgba(0,255,65,0.1);padding:12px 20px;display:flex;align-items:center}
+.tp{color:#00d050;margin-right:10px;white-space:nowrap}
+#ti{flex:1;background:transparent;border:none;outline:none;color:#00d050;font-family:'JetBrains Mono',monospace;font-size:13px;caret-color:#00d050}
+#term-fab{
+  position:fixed;bottom:22px;right:22px;width:42px;height:42px;
+  background:rgba(0,200,60,0.06);border:1px solid rgba(0,200,60,0.2);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1000;
+  font-family:'JetBrains Mono',monospace;font-size:13px;color:#00c840;
+  transition:all .3s;backdrop-filter:blur(10px);
+}
+#term-fab:hover{background:rgba(0,200,60,0.12);border-color:rgba(0,200,60,0.4);box-shadow:0 0 16px rgba(0,200,60,0.15);transform:scale(1.08)}
+
+/* SCANLINE on terminal */
+#terminal::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none}
+
+/* DEPTH CROSSHAIR */
+#crosshair{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:15;pointer-events:none;width:20px;height:20px;opacity:0.2;
+}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(232,146,42,0.5)}
+#crosshair::before{width:1px;height:20px;left:50%;top:0;transform:translateX(-50%)}
+#crosshair::after{width:20px;height:1px;top:50%;left:0;transform:translateY(-50%)}
+
+/* LOCATION INDICATOR (bottom center) */
+#location{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:25;font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:3px;color:rgba(232,146,42,0.35);text-transform:uppercase;
+  pointer-events:none;transition:opacity .5s;text-align:center;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+  body{cursor:auto}
+  #cur,#cur-ring,#progress-nav{display:none}
+  .panel-inner{padding:24px 20px}
+  .panel-title{font-size:24px}
+  .hero-name{font-size:clamp(40px,10vw,72px)}
+}
+
+/* ══ LOADING SCREEN ══════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:99999;
+  background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 1s ease;
+}
+#loader.fade-out{opacity:0;pointer-events:none}
+.loader-rune{
+  font-family:'Cinzel',serif;font-size:clamp(28px,4vw,48px);
+  color:#e8d5b0;letter-spacing:4px;margin-bottom:28px;
+  text-shadow:0 0 30px rgba(232,146,42,0.5);
+}
+.loader-sub{
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:3px;
+  color:rgba(232,146,42,0.5);text-transform:uppercase;margin-bottom:32px;
+}
+.loader-bar-wrap{
+  width:280px;height:2px;background:rgba(232,146,42,0.1);border-radius:1px;overflow:hidden;
+}
+.loader-bar{
+  height:100%;width:0;background:linear-gradient(to right,#e8922a,#e8d5b0);
+  border-radius:1px;transition:width .08s linear;
+  box-shadow:0 0 8px rgba(232,146,42,0.6);
+}
+.loader-pct{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:rgba(232,146,42,0.4);margin-top:12px;letter-spacing:2px;
+}
+/* torch flicker on loader rune */
+@keyframes loaderFlicker{
+  0%,100%{text-shadow:0 0 30px rgba(232,146,42,0.5)}
+  45%{text-shadow:0 0 50px rgba(232,146,42,0.8),0 0 80px rgba(232,100,20,0.4)}
+  50%{text-shadow:0 0 20px rgba(232,146,42,0.3)}
+  55%{text-shadow:0 0 50px rgba(232,146,42,0.7)}
+}
+.loader-rune{animation:loaderFlicker 2s ease-in-out infinite}
+
+/* ══ FAST TRAVEL TOGGLE ══════════════════════ */
+#view-toggle{
+  position:fixed;top:20px;right:20px;z-index:200;
+  display:flex;align-items:center;gap:0;
+  background:rgba(10,6,2,0.85);border:1px solid rgba(232,146,42,0.2);
+  border-radius:6px;overflow:hidden;backdrop-filter:blur(12px);
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;
+}
+.vt-btn{
+  padding:9px 16px;color:rgba(200,160,90,0.5);cursor:pointer;
+  background:none;border:none;transition:all .25s;white-space:nowrap;
+}
+.vt-btn.active{background:rgba(232,146,42,0.12);color:#e8922a;box-shadow:inset 0 0 12px rgba(232,146,42,0.08)}
+.vt-btn:hover:not(.active){color:rgba(200,160,90,0.8)}
+.vt-sep{width:1px;background:rgba(232,146,42,0.15);align-self:stretch}
+
+/* ══ QUICK VIEW OVERLAY ══════════════════════ */
+#quick-view{
+  position:fixed;inset:0;z-index:150;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s ease;
+  background:rgba(4,2,1,0.94);
+  backdrop-filter:blur(20px);
+}
+#quick-view.open{opacity:1;pointer-events:all}
+#quick-view::-webkit-scrollbar{width:4px}
+#quick-view::-webkit-scrollbar-thumb{background:rgba(232,146,42,0.3);border-radius:2px}
+.qv-inner{max-width:800px;margin:0 auto;padding:60px 32px 80px;}
+.qv-header{text-align:center;padding:40px 0 48px;border-bottom:1px solid rgba(232,146,42,0.1);margin-bottom:48px}
+.qv-name{font-family:'Cinzel',serif;font-size:clamp(36px,5vw,64px);color:#e8d5b0;
+  text-shadow:0 0 40px rgba(232,146,42,0.3);margin-bottom:8px}
+.qv-role{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:3px;
+  color:rgba(232,146,42,0.5);text-transform:uppercase;margin-bottom:20px}
+.qv-links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.qv-link{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;
+  border:1px solid rgba(232,146,42,0.2);color:#a07840;padding:6px 16px;
+  border-radius:3px;text-decoration:none;transition:all .2s}
+.qv-link:hover{border-color:rgba(232,146,42,0.5);color:#e8d5b0}
+.qv-section{margin-bottom:44px}
+.qv-section-title{font-family:'Cinzel',serif;font-size:18px;color:#c8a870;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.qv-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(232,146,42,0.3),transparent)}
+.qv-p{font-family:'Space Grotesk',sans-serif;font-size:14px;color:#7a6040;line-height:1.75;margin-bottom:10px}
+.qv-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.qv-tag{font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid rgba(232,146,42,0.15);
+  color:#b8905a;padding:4px 12px;border-radius:3px}
+.qv-proj{background:rgba(232,146,42,0.03);border:1px solid rgba(232,146,42,0.1);
+  border-radius:6px;padding:18px;margin-bottom:14px}
+.qv-proj-title{font-family:'Cinzel',serif;font-size:15px;color:#c8a870;margin-bottom:6px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.qv-proj-title a{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.5);
+  border:1px solid rgba(232,146,42,0.15);padding:3px 8px;border-radius:3px;text-decoration:none;transition:all .2s}
+.qv-proj-title a:hover{color:#e8922a;border-color:rgba(232,146,42,0.5)}
+.qv-edu{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;
+  padding:14px 0;border-bottom:1px solid rgba(232,146,42,0.06)}
+.qv-edu:last-child{border-bottom:none}
+.qv-edu-school{font-family:'Space Grotesk',sans-serif;font-size:14px;color:#c8a870}
+.qv-edu-deg{font-size:12px;color:#5a4020;margin-top:3px}
+.qv-edu-score{font-family:'JetBrains Mono',monospace;font-size:18px;color:#e8922a;font-weight:700}
+.qv-cert{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(232,146,42,0.05)}
+.qv-cert:last-child{border-bottom:none}
+.qv-cert-dot{width:6px;height:6px;border-radius:50%;background:#e8922a;box-shadow:0 0 6px #e8922a;flex-shrink:0;margin-top:5px}
+.qv-cert-name{font-size:13px;color:#c8a870}
+.qv-cert-org{font-size:11px;color:#5a4020;font-family:'JetBrains Mono',monospace;margin-top:2px}
+.qv-dl{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:20px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;
+  border:1px solid rgba(232,146,42,0.4);background:rgba(232,146,42,0.06);color:#e8922a;
+  padding:12px 28px;border-radius:4px;text-decoration:none;transition:all .3s;
+}
+.qv-dl:hover{background:rgba(232,146,42,0.12);box-shadow:0 0 20px rgba(232,146,42,0.15)}
+
+/* ══ SOUND TOGGLE ════════════════════════════ */
+#sound-btn{
+  position:fixed;top:20px;left:20px;z-index:200;
+  width:40px;height:40px;border-radius:6px;
+  background:rgba(10,6,2,0.85);border:1px solid rgba(232,146,42,0.2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:16px;transition:all .25s;backdrop-filter:blur(12px);
+}
+#sound-btn:hover{border-color:rgba(232,146,42,0.5);background:rgba(232,146,42,0.08)}
+</style>
+</head>
+<body>
+
+<div id="scroll-space"></div>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div id="crosshair"></div>
+
+<!-- LOADING SCREEN -->
+<div id="loader">
+  <div class="loader-rune">Amit Krishna</div>
+  <div class="loader-sub">Forging the dungeon&hellip;</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-pct" id="loader-pct">0%</div>
+</div>
+
+<!-- FAST TRAVEL TOGGLE (top right) -->
+<div id="view-toggle">
+  <button class="vt-btn active" id="btn-3d" onclick="setView('3d')">⬡ 3D Journey</button>
+  <div class="vt-sep"></div>
+  <button class="vt-btn" id="btn-2d" onclick="setView('2d')">☰ Quick View</button>
+</div>
+
+<!-- SOUND TOGGLE (top left) -->
+<button id="sound-btn" onclick="toggleSound()" title="Toggle ambient sound">🔇</button>
+
+<!-- QUICK VIEW OVERLAY (2D resume) -->
+<div id="quick-view">
+  <div class="qv-inner">
+    <div class="qv-header">
+      <div class="qv-name">Amit Krishna</div>
+      <div class="qv-role">CS Engineer · Data Science · Developer</div>
+      <div class="qv-links">
+        <a class="qv-link" href="mailto:amit.krishna.11d@gmail.com">✉ Email</a>
+        <a class="qv-link" href="https://github.com/Amit-Krishna" target="_blank">⬡ GitHub</a>
+        <a class="qv-link" href="https://www.linkedin.com/in/amit-krishna/" target="_blank">in LinkedIn</a>
+        <a class="qv-link" href="https://leetcode.com/u/Amit-Krishna/" target="_blank">⌥ LeetCode</a>
+        <a class="qv-link qv-dl" href="CVVVV.pdf" download="Amit_Krishna_CV.pdf">↓ Download CV</a>
+      </div>
+    </div>
+
+    <div class="qv-section">
+      <div class="qv-section-title">About</div>
+      <p class="qv-p">Developer focused on problem-solving, analytical thinking, and building highly efficient systems from the ground up. Pursuing B.Tech CSE at Lovely Professional University with a CGPA of <strong style="color:#e8922a">8.63</strong>.</p>
+    </div>
+
+    <div class="qv-section">
+      <div class="qv-section-title">Skills</div>
+      <div style="margin-bottom:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.4);letter-spacing:2px;text-transform:uppercase">Languages</span>
+        <div class="qv-tags"><span class="qv-tag">C++</span><span class="qv-tag">Python</span><span class="qv-tag">Java</span><span class="qv-tag">C</span></div></div>
+      <div style="margin-bottom:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.4);letter-spacing:2px;text-transform:uppercase">Frameworks</span>
+        <div class="qv-tags"><span class="qv-tag">Scikit-learn</span><span class="qv-tag">HTML</span><span class="qv-tag">CSS</span><span class="qv-tag">Next.js</span></div></div>
+      <div style="margin-bottom:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.4);letter-spacing:2px;text-transform:uppercase">Tools</span>
+        <div class="qv-tags"><span class="qv-tag">Git</span><span class="qv-tag">VS Code</span><span class="qv-tag">Figma</span><span class="qv-tag">Excel</span><span class="qv-tag">Power BI</span><span class="qv-tag">Anaconda</span></div></div>
+      <div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.4);letter-spacing:2px;text-transform:uppercase">Databases</span>
+        <div class="qv-tags"><span class="qv-tag">MySQL</span><span class="qv-tag">Supabase</span></div></div>
+    </div>
+
+    <div class="qv-section">
+      <div class="qv-section-title">Projects</div>
+      <div class="qv-proj">
+        <div class="qv-proj-title">🚗 NYC Motor Vehicle Collisions Analysis <a href="https://github.com/Amit-Krishna/NYC-Road-Accident-Analysis" target="_blank">↗ GitHub</a></div>
+        <p class="qv-p">EDA on 200K+ NYC collision records. Improved dataset reliability ~30% through feature engineering. Interactive pivot dashboard boosted insight discovery ~45%.</p>
+        <div class="qv-tags"><span class="qv-tag">Excel</span><span class="qv-tag">Pivot Tables</span><span class="qv-tag">EDA</span></div>
+      </div>
+      <div class="qv-proj">
+        <div class="qv-proj-title">🩺 Cancer Risk Analysis Dashboard <a href="https://github.com/Amit-Krishna/Cancer-dashboard-analysis" target="_blank">↗ GitHub</a></div>
+        <p class="qv-p">Interactive Power BI dashboard analysing cancer risk across demographic, lifestyle and clinical factors with dynamic filtering and drill-down.</p>
+        <div class="qv-tags"><span class="qv-tag">Power BI</span><span class="qv-tag">DAX</span><span class="qv-tag">Data Modeling</span></div>
+      </div>
+      <div class="qv-proj">
+        <div class="qv-proj-title">🌾 Agricultural Dataset Analysis <a href="https://github.com/Amit-Krishna/Python-Visualization-Data-Science-Project" target="_blank">↗ GitHub</a></div>
+        <p class="qv-p">End-to-end data analysis on commodity pricing trends. Linear regression model for modal price prediction with MSE evaluation.</p>
+        <div class="qv-tags"><span class="qv-tag">Python</span><span class="qv-tag">Pandas</span><span class="qv-tag">Scikit-learn</span><span class="qv-tag">Matplotlib</span></div>
+      </div>
+    </div>
+
+    <div class="qv-section">
+      <div class="qv-section-title">Education</div>
+      <div class="qv-edu">
+        <div><div class="qv-edu-school">Lovely Professional University</div><div class="qv-edu-deg">B.Tech — CSE · Punjab · Aug 2023–Present</div></div>
+        <div style="text-align:right"><div class="qv-edu-score">8.63</div><div style="font-size:11px;color:#5a4020">CGPA</div></div>
+      </div>
+      <div class="qv-edu">
+        <div><div class="qv-edu-school">Montfort Inter College</div><div class="qv-edu-deg">Intermediate (XII) · Lucknow · 2023</div></div>
+        <div style="text-align:right"><div class="qv-edu-score" style="font-size:16px">75%</div></div>
+      </div>
+      <div class="qv-edu">
+        <div><div class="qv-edu-school">City Montessori School Cambridge</div><div class="qv-edu-deg">Matriculation (X) · Lucknow · 2021</div></div>
+        <div style="text-align:right"><div class="qv-edu-score" style="font-size:16px">89%</div></div>
+      </div>
+    </div>
+
+    <div class="qv-section">
+      <div class="qv-section-title">Certifications</div>
+      <div class="qv-cert"><div class="qv-cert-dot"></div><div><div class="qv-cert-name">Privacy and Security in Online Social Media</div><div class="qv-cert-org">NPTEL — Mar 2024</div></div></div>
+      <div class="qv-cert"><div class="qv-cert-dot"></div><div><div class="qv-cert-name">Full Stack Web Development</div><div class="qv-cert-org">freeCodeCamp — Nov 2023</div></div></div>
+      <div class="qv-cert"><div class="qv-cert-dot"></div><div><div class="qv-cert-name">Conflict Management</div><div class="qv-cert-org">Udemy — Dec 2023</div></div></div>
+      <div class="qv-cert"><div class="qv-cert-dot"></div><div><div class="qv-cert-name">Community Development Project</div><div class="qv-cert-org">FoodBoxFoundation — Jul 2024</div></div></div>
+    </div>
+
+    <div style="text-align:center;padding-top:20px">
+      <a class="qv-dl" href="CVVVV.pdf" download="Amit_Krishna_CV.pdf">↓ Download Full Resume</a>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div id="hero-panel">
+  <div class="hero-sub">◈ The Descent Begins ◈</div>
+  <div class="hero-name">Amit Krishna</div>
+  <div class="hero-title"><span id="typing"></span><span class="typing-cur"></span></div>
+  <div class="hero-desc">Passionate about building efficient software, solving complex problems, and creating impactful digital products.</div>
+  <div class="hero-btns">
+    <button class="dungeon-btn primary" onclick="jumpToSection(3)">⚡ View Projects</button>
+    <button class="dungeon-btn" onclick="jumpToSection(7)">✉ Contact</button>
+    <a href="CVVVV.pdf" download="Amit_Krishna_CV.pdf" class="dungeon-btn">↓ Resume</a>
+  </div>
+  <div class="scroll-hint">↓ &nbsp; scroll to descend &nbsp; ↓</div>
+</div>
+
+<!-- PANEL 0: ABOUT -->
+<div class="section-panel" id="panel-0">
+  <div class="panel-inner">
+    <div class="panel-label">Landing I — The Inscription</div>
+    <div class="panel-title">About Me</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <p class="rune-text">I am a developer focused on <span class="accent">problem-solving</span>, analytical thinking, and building highly efficient systems from the ground up.</p>
+      <div style="height:16px"></div>
+      <p class="rune-text muted" style="color:#7a6040">Currently pursuing B.Tech in Computer Science &amp; Engineering at Lovely Professional University with a CGPA of <span class="accent mono">8.63</span>. I blend strong fundamentals with hands-on project experience.</p>
+      <div style="height:24px"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div style="text-align:center;padding:14px 8px;background:rgba(232,146,42,0.04);border:1px solid rgba(232,146,42,0.1);border-radius:5px">
+          <div style="font-family:'Cinzel',serif;font-size:24px;color:#e8922a">3+</div>
+          <div style="font-size:11px;color:#5a4020;margin-top:4px;font-family:'JetBrains Mono',monospace">PROJECTS</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:rgba(232,146,42,0.04);border:1px solid rgba(232,146,42,0.1);border-radius:5px">
+          <div style="font-family:'Cinzel',serif;font-size:24px;color:#e8922a">8.63</div>
+          <div style="font-size:11px;color:#5a4020;margin-top:4px;font-family:'JetBrains Mono',monospace">CGPA</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:rgba(232,146,42,0.04);border:1px solid rgba(232,146,42,0.1);border-radius:5px">
+          <div style="font-family:'Cinzel',serif;font-size:24px;color:#e8922a">4</div>
+          <div style="font-size:11px;color:#5a4020;margin-top:4px;font-family:'JetBrains Mono',monospace">CERTS</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:rgba(232,146,42,0.04);border:1px solid rgba(232,146,42,0.1);border-radius:5px">
+          <div style="font-family:'Cinzel',serif;font-size:24px;color:#e8922a">40%</div>
+          <div style="font-size:11px;color:#5a4020;margin-top:4px;font-family:'JetBrains Mono',monospace">GAINS</div>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:16px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#5a4020"><span class="accent">📍</span> Punjab, India</span>
+        <span style="font-size:13px;color:#5a4020"><span class="accent">🎓</span> LPU B.Tech CSE</span>
+        <span style="font-size:13px;color:#5a4020"><span class="accent">💡</span> Open to Opportunities</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 1: SKILLS -->
+<div class="section-panel" id="panel-1">
+  <div class="panel-inner">
+    <div class="panel-label">Landing II — The Arsenal</div>
+    <div class="panel-title">Skills & Expertise</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <div class="tag-group">
+        <div class="tag-group-label">⚔ Languages</div>
+        <div class="tags">
+          <span class="tag">C++</span><span class="tag">Python</span><span class="tag">Java</span><span class="tag">C</span>
+        </div>
+      </div>
+      <div class="tag-group">
+        <div class="tag-group-label">🛡 Frameworks & Web</div>
+        <div class="tags">
+          <span class="tag">Scikit-learn</span><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">Next.js</span>
+        </div>
+      </div>
+      <div class="tag-group">
+        <div class="tag-group-label">🔮 Tools & Platforms</div>
+        <div class="tags">
+          <span class="tag">Git</span><span class="tag">GitHub</span><span class="tag">VS Code</span><span class="tag">Anaconda</span><span class="tag">Figma</span><span class="tag">Excel</span><span class="tag">Power BI</span>
+        </div>
+      </div>
+      <div class="tag-group">
+        <div class="tag-group-label">🗃 Databases</div>
+        <div class="tags">
+          <span class="tag">MySQL</span><span class="tag">Supabase</span>
+        </div>
+      </div>
+      <div class="tag-group" style="margin-bottom:0">
+        <div class="tag-group-label" style="color:rgba(140,100,200,0.4)">✦ Soft Skills</div>
+        <div class="tags">
+          <span class="tag" style="border-color:rgba(140,100,200,0.2);color:#9870c0">Problem-Solving</span>
+          <span class="tag" style="border-color:rgba(140,100,200,0.2);color:#9870c0">Analytical Thinking</span>
+          <span class="tag" style="border-color:rgba(140,100,200,0.2);color:#9870c0">Teamwork</span>
+          <span class="tag" style="border-color:rgba(140,100,200,0.2);color:#9870c0">Adaptability</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 2: PROJECTS -->
+<div class="section-panel" id="panel-2">
+  <div class="panel-inner" style="padding:36px">
+    <div class="panel-label">Landing III — The Artefacts</div>
+    <div class="panel-title">Featured Projects</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <div class="proj-grid">
+
+        <div class="proj-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div class="proj-icon">🚗</div>
+            <a href="https://github.com/Amit-Krishna/NYC-Road-Accident-Analysis" target="_blank"
+               style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(232,146,42,0.5);text-decoration:none;border:1px solid rgba(232,146,42,0.15);padding:3px 8px;border-radius:3px;transition:all .2s"
+               onmouseover="this.style.color='#e8922a';this.style.borderColor='rgba(232,146,42,0.5)'"
+               onmouseout="this.style.color='rgba(232,146,42,0.5)';this.style.borderColor='rgba(232,146,42,0.15)'">
+              ↗ GitHub
+            </a>
+          </div>
+          <div class="proj-title">NYC Motor Vehicle Collisions Analysis</div>
+          <div class="proj-desc">Exploratory data analysis on <span class="accent">200K+</span> NYC collision records to uncover accident patterns, risk factors, and high-impact crash zones. Improved dataset reliability by <span class="accent">~30%</span> through feature engineering &amp; missing data handling. Interactive pivot dashboard boosted insight discovery by <span class="accent">~45%</span>.</div>
+          <div class="tech-tags"><span class="tech-tag">Excel</span><span class="tech-tag">Pivot Tables</span><span class="tech-tag">Pivot Charts</span><span class="tech-tag">EDA</span><span class="tech-tag">Data Cleaning</span></div>
+        </div>
+
+        <div class="proj-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div class="proj-icon">🩺</div>
+            <a href="https://github.com/Amit-Krishna/Cancer-dashboard-analysis" target="_blank"
+               style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(232,146,42,0.5);text-decoration:none;border:1px solid rgba(232,146,42,0.15);padding:3px 8px;border-radius:3px;transition:all .2s"
+               onmouseover="this.style.color='#e8922a';this.style.borderColor='rgba(232,146,42,0.5)'"
+               onmouseout="this.style.color='rgba(232,146,42,0.5)';this.style.borderColor='rgba(232,146,42,0.15)'">
+              ↗ GitHub
+            </a>
+          </div>
+          <div class="proj-title">Cancer Risk Analysis Dashboard</div>
+          <div class="proj-desc">Interactive Power BI dashboard analysing cancer risk patterns using demographic, lifestyle, and clinical factors — smoking habits, BMI, diet &amp; family history. Multi-page dashboards with <span class="accent">dynamic filtering</span> and drill-down capabilities across cancer types, enabling efficient patient risk profile exploration.</div>
+          <div class="tech-tags"><span class="tech-tag">Power BI</span><span class="tech-tag">DAX</span><span class="tech-tag">Data Modeling</span><span class="tech-tag">Data Viz</span></div>
+        </div>
+
+        <div class="proj-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div class="proj-icon">🌾</div>
+            <a href="https://github.com/Amit-Krishna/Python-Visualization-Data-Science-Project" target="_blank"
+               style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(232,146,42,0.5);text-decoration:none;border:1px solid rgba(232,146,42,0.15);padding:3px 8px;border-radius:3px;transition:all .2s"
+               onmouseover="this.style.color='#e8922a';this.style.borderColor='rgba(232,146,42,0.5)'"
+               onmouseout="this.style.color='rgba(232,146,42,0.5)';this.style.borderColor='rgba(232,146,42,0.15)'">
+              ↗ GitHub
+            </a>
+          </div>
+          <div class="proj-title">Agricultural Dataset Analysis</div>
+          <div class="proj-desc">End-to-end data analysis exploring commodity pricing trends, market behaviour, and state-wise distribution. Built heatmaps, pairplots, boxplots &amp; trend analyses. Developed a <span class="accent">linear regression model</span> to predict modal prices, evaluated with MSE for basic price forecasting.</div>
+          <div class="tech-tags"><span class="tech-tag">Python</span><span class="tech-tag">Pandas</span><span class="tech-tag">Matplotlib</span><span class="tech-tag">Seaborn</span><span class="tech-tag">Scikit-learn</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 3: CERTS -->
+<div class="section-panel" id="panel-3">
+  <div class="panel-inner">
+    <div class="panel-label">Landing IV — The Seals</div>
+    <div class="panel-title">Certifications</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <div class="cert-item">
+        <div class="cert-flame">🔥</div>
+        <div>
+          <div class="cert-name">Privacy and Security in Online Social Media</div>
+          <div class="cert-org">NPTEL — Mar 2024</div>
+        </div>
+      </div>
+      <div class="cert-item">
+        <div class="cert-flame">🔥</div>
+        <div>
+          <div class="cert-name">Full Stack Web Development</div>
+          <div class="cert-org">freeCodeCamp — Nov 2023</div>
+        </div>
+      </div>
+      <div class="cert-item">
+        <div class="cert-flame">🔥</div>
+        <div>
+          <div class="cert-name">Conflict Management — How to Deal with Difficult People</div>
+          <div class="cert-org">Udemy — Dec 2023</div>
+        </div>
+      </div>
+      <div class="cert-item">
+        <div class="cert-flame">🔥</div>
+        <div>
+          <div class="cert-name">Community Development Project</div>
+          <div class="cert-org">FoodBoxFoundation — Jul 2024</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 4: EDUCATION -->
+<div class="section-panel" id="panel-4">
+  <div class="panel-inner">
+    <div class="panel-label">Landing V — The Scrolls</div>
+    <div class="panel-title">Education</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <div class="edu-card" style="border-color:rgba(232,146,42,0.25);background:rgba(232,146,42,0.04)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;color:rgba(232,146,42,0.4);margin-bottom:8px">CURRENT</div>
+            <div class="edu-school">Lovely Professional University</div>
+            <div class="edu-degree">B.Tech — Computer Science & Engineering</div>
+            <div style="font-size:12px;color:#3a2810;margin-top:3px;font-family:'JetBrains Mono',monospace">Aug 2023 – Present · Punjab, India</div>
+          </div>
+          <div style="text-align:right">
+            <div class="edu-score">8.63</div>
+            <div style="font-size:11px;color:#5a4020">CGPA</div>
+          </div>
+        </div>
+      </div>
+      <div class="edu-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div class="edu-school" style="font-size:14px">Montfort Inter College</div>
+            <div class="edu-degree">Intermediate (Class XII) · Lucknow, UP</div>
+          </div>
+          <div style="text-align:right">
+            <div class="edu-score" style="font-size:20px">75%</div>
+            <div style="font-size:11px;color:#5a4020;font-family:'JetBrains Mono',monospace">Mar 2023</div>
+          </div>
+        </div>
+      </div>
+      <div class="edu-card" style="margin-bottom:0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div class="edu-school" style="font-size:14px">City Montessori School Cambridge</div>
+            <div class="edu-degree">Matriculation (Class X) · Lucknow, UP</div>
+          </div>
+          <div style="text-align:right">
+            <div class="edu-score" style="font-size:20px">89%</div>
+            <div style="font-size:11px;color:#5a4020;font-family:'JetBrains Mono',monospace">Mar 2021</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 5: JOURNEY -->
+<div class="section-panel" id="panel-5">
+  <div class="panel-inner">
+    <div class="panel-label">Landing VI — The Chronicle</div>
+    <div class="panel-title">Developer Journey</div>
+    <div class="panel-divider"></div>
+    <div class="panel-body">
+      <div class="timeline-item">
+        <div class="timeline-icon">🌱</div>
+        <div class="timeline-content">
+          <div class="timeline-phase">Phase 01</div>
+          <div class="timeline-title">Programming Foundations</div>
+          <div class="timeline-desc">Started with C++ and Python — mastering control structures, OOP, data types, and algorithmic thinking. Built the mental model for efficient code.</div>
+          <div class="tags" style="margin-top:10px"><span class="tag">C++</span><span class="tag">Python</span><span class="tag">OOP</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-icon">⚙️</div>
+        <div class="timeline-content">
+          <div class="timeline-phase">Phase 02</div>
+          <div class="timeline-title">Data Structures Training</div>
+          <div class="timeline-desc">LPU intensive training — implementing classic algorithms, DSA problems, and participating in team mini-projects with real collaborative workflows.</div>
+          <div class="tags" style="margin-top:10px"><span class="tag">DSA</span><span class="tag">Algorithms</span><span class="tag">Team Projects</span></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-icon">🚀</div>
+        <div class="timeline-content">
+          <div class="timeline-phase">Phase 03 — Present</div>
+          <div class="timeline-title">Advanced Project Development</div>
+          <div class="timeline-desc">Building production-ready apps: full-stack web development, data analysis dashboards, and browser extensions with measurable real-world impact.</div>
+          <div class="tags" style="margin-top:10px"><span class="tag">Next.js</span><span class="tag">Supabase</span><span class="tag">Excel EDA</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div id="contact-panel">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:4px;color:rgba(232,146,42,0.3);margin-bottom:20px">◈ The Basement Floor ◈</div>
+  <div class="contact-title">Let's build<br/>something great.</div>
+  <div class="contact-sub" style="font-family:'Space Grotesk',sans-serif">You've reached the bottom. Whether it's a new project, collaboration, or just a chat about tech — reach out.</div>
+  <div class="contact-links">
+    <a class="contact-link" href="mailto:amit.krishna.11d@gmail.com">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      amit.krishna.11d@gmail.com
+    </a>
+    <a class="contact-link" href="https://github.com/Amit-Krishna" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z"/></svg>
+      GitHub — Amit-Krishna
+    </a>
+    <a class="contact-link" href="https://www.linkedin.com/in/amit-krishna/" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+      LinkedIn — Amit Krishna
+    </a>
+    <a class="contact-link" href="https://leetcode.com/u/Amit-Krishna/" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/></svg>
+      LeetCode — Amit-Krishna
+    </a>
+    <a class="contact-link dungeon-btn primary" href="CVVVV.pdf" download="Amit_Krishna_CV.pdf">↓ Download Resume</a>
+  </div>
+  <div class="contact-divider"></div>
+  <button class="back-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ ASCEND THE STAIRCASE ↑</button>
+  <div style="margin-top:36px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.2)">
+    Press <kbd style="background:rgba(232,146,42,0.05);border:1px solid rgba(232,146,42,0.15);padding:2px 6px;border-radius:3px;font-family:inherit">` </kbd> for the developer console
+  </div>
+</div>
+
+<!-- PROGRESS NAV -->
+<div id="progress-nav">
+  <div class="p-dot active" data-idx="0" onclick="jumpToSection(0)"><span class="tip">Hero</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="1" onclick="jumpToSection(1)"><span class="tip">About</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="2" onclick="jumpToSection(2)"><span class="tip">Skills</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="3" onclick="jumpToSection(3)"><span class="tip">Projects</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="4" onclick="jumpToSection(4)"><span class="tip">Certs</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="5" onclick="jumpToSection(5)"><span class="tip">Education</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="6" onclick="jumpToSection(6)"><span class="tip">Journey</span></div>
+  <div class="p-line"></div>
+  <div class="p-dot" data-idx="7" onclick="jumpToSection(7)"><span class="tip">Contact</span></div>
+</div>
+
+<!-- LOCATION INDICATOR -->
+<div id="location">Descend the Spiral Staircase</div>
+
+<!-- TERMINAL -->
+<div id="terminal">
+  <div class="term-header">
+    <div class="td" style="background:#ff5f57"></div>
+    <div class="td" style="background:#febc2e"></div>
+    <div class="td" style="background:#28c840"></div>
+    <span style="color:rgba(0,220,80,.5);font-size:12px;margin-left:12px">amit@dungeon:~$ — developer terminal</span>
+    <button onclick="closeTerm()" style="margin-left:auto;background:none;border:none;color:rgba(0,220,80,.4);font-size:18px;cursor:pointer;font-family:'JetBrains Mono',monospace">✕</button>
+  </div>
+  <div id="term-body">
+    <div class="ts2">╔══════════════════════════════════════════════╗</div>
+    <div class="ts2">║  AMIT KRISHNA  ·  DEVELOPER CONSOLE  v1.0   ║</div>
+    <div class="ts2">║  CS Engineering @ LPU  ·  Builder  ·  Solver ║</div>
+    <div class="ts2">╚══════════════════════════════════════════════╝</div>
+    <div class="to"> </div>
+    <div class="tl">Type <span style="color:#00d4ff">help</span> for commands.</div>
+    <div class="to"> </div>
+  </div>
+  <div class="term-input-row">
+    <span class="tp">amit@dungeon:~$&nbsp;</span>
+    <input id="ti" type="text" autocomplete="off" spellcheck="false"/>
+  </div>
+</div>
+<button id="term-fab" onclick="openTerm()">&gt;_</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+//   THREE.JS DUNGEON SPIRAL STAIRCASE
+// ═══════════════════════════════════════════════
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = false;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x000000, 0.05);
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.05, 80);
+
+// ── PROCEDURAL STONE TEXTURE ──────────────────
+function makeStone(w=512,h=512,darkBase=true){
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const ctx=cv.getContext('2d');
+  const base=darkBase?[18,14,10]:[30,24,18];
+  const id=ctx.createImageData(w,h);
+  for(let i=0;i<id.data.length;i+=4){
+    const n=Math.random()*22;
+    id.data[i]=base[0]+n;id.data[i+1]=base[1]+n*.9;
+    id.data[i+2]=base[2]+n*.8;id.data[i+3]=255;
+  }
+  ctx.putImageData(id,0,0);
+  // horizontal mortar
+  for(let y=0;y<h;y+=20+Math.floor(Math.random()*10)){
+    ctx.fillStyle=`rgba(0,0,0,${.4+Math.random()*.3})`;
+    ctx.fillRect(0,y,w,1+Math.floor(Math.random()*2));
+  }
+  // vertical block lines
+  let off=0;
+  for(let y=0;y<h;y+=20){
+    off=(off+40+Math.random()*24)%w;
+    for(let x=off;x<w+off;x+=40+Math.random()*20){
+      ctx.fillStyle=`rgba(0,0,0,${.15+Math.random()*.2})`;
+      ctx.fillRect(x%w,y,1,20);
+    }
+  }
+  const t=new THREE.CanvasTexture(cv);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return t;
+}
+
+// ── SCENE CONSTANTS ───────────────────────────
+const OUTER_R  = 7.0;   // outer shaft radius
+const INNER_R  = 1.3;   // central pillar radius
+const STEP_R   = 4.4;   // mid-step radius (camera walks here)
+const STEPS    = 56;    // total step count
+const ROTS     = 2.7;   // total rotations of spiral
+const DESCENT  = 28;    // total Y drop
+const SHAFT_H  = DESCENT + 14;
+const EYE_H    = 1.55;
+
+// Which steps are content landings
+const LANDING_STEPS = [7, 15, 24, 33, 41, 49];
+
+// ── MATERIALS (MeshStandardMaterial for realistic PBR lighting) ──────────
+const wallTex = makeStone(512,512,true); wallTex.repeat.set(10,6);
+const stepTex = makeStone(256,128,false); stepTex.repeat.set(2,1);
+
+const wallMat  = new THREE.MeshStandardMaterial({color:0x1a1410,map:wallTex,side:THREE.BackSide,roughness:0.95,metalness:0.05});
+const pMat     = new THREE.MeshStandardMaterial({color:0x111008,map:makeStone(256,512,true),roughness:0.98,metalness:0.02});
+const sMat     = new THREE.MeshStandardMaterial({color:0x1e1814,map:stepTex,roughness:0.9,metalness:0.05});
+const landMat  = new THREE.MeshStandardMaterial({color:0x252018,roughness:0.88,metalness:0.08});
+const floorMat = new THREE.MeshStandardMaterial({color:0x0c0a07,roughness:0.95,metalness:0.02});
+const railMat  = new THREE.MeshStandardMaterial({color:0x2a1e14,roughness:0.85,metalness:0.15});
+
+// ── SHAFT OUTER CYLINDER (BackSide = inside of shaft) ──
+const shaft = new THREE.Mesh(
+  new THREE.CylinderGeometry(OUTER_R, OUTER_R, SHAFT_H, 32, 4, true),
+  wallMat
+);
+shaft.position.y = -(SHAFT_H/2 - 4);
+scene.add(shaft);
+
+// ── CENTRAL PILLAR ─────────────────────────
+const pillar = new THREE.Mesh(
+  new THREE.CylinderGeometry(INNER_R, INNER_R+0.2, SHAFT_H, 12),
+  pMat
+);
+pillar.position.y = -(SHAFT_H/2 - 4);
+scene.add(pillar);
+
+// ── CEILING ────────────────────────────────
+const ceiling = new THREE.Mesh(
+  new THREE.RingGeometry(INNER_R+0.2, OUTER_R, 32),
+  floorMat
+);
+ceiling.rotation.x = Math.PI/2;
+ceiling.position.y = 5;
+scene.add(ceiling);
+
+// ── FLOOR AT BOTTOM ────────────────────────
+const floor = new THREE.Mesh(
+  new THREE.CircleGeometry(OUTER_R, 32),
+  floorMat
+);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -(DESCENT + 5);
+scene.add(floor);
+
+// torchData declared here so both basement + spiral steps can push into it
+const torchData = []; // {light, flame, stepT, isBasement?}
+
+// ── BASEMENT ROOM (opens at bottom of shaft) ──
+const BSMT_R  = 11.0;
+const BSMT_H  = 7.0;
+const BSMT_Y_BASE = -(DESCENT + 5 + BSMT_H); // bottom of basement
+
+// Wider cylindrical basement walls
+const bsmtWallMat = new THREE.MeshStandardMaterial({
+  color:0x130e0a, map:makeStone(512,512,true), side:THREE.BackSide, roughness:0.97, metalness:0.03
+});
+bsmtWallMat.map.repeat.set(12,4);
+const bsmtWall = new THREE.Mesh(
+  new THREE.CylinderGeometry(BSMT_R, BSMT_R, BSMT_H, 28, 3, true),
+  bsmtWallMat
+);
+bsmtWall.position.y = -(DESCENT + 5 + BSMT_H/2);
+scene.add(bsmtWall);
+
+// Basement floor (large stone slab)
+const bsmtFloorTex = makeStone(512,512,true); bsmtFloorTex.repeat.set(8,8);
+const bsmtFloorMesh = new THREE.Mesh(
+  new THREE.CircleGeometry(BSMT_R, 32),
+  new THREE.MeshStandardMaterial({color:0x100d0a, map:bsmtFloorTex, roughness:0.95, metalness:0.02})
+);
+bsmtFloorMesh.rotation.x = -Math.PI/2;
+bsmtFloorMesh.position.y = BSMT_Y_BASE;
+scene.add(bsmtFloorMesh);
+
+// Basement ceiling / transition ring (shaft meets basement)
+const bsmtCeilMesh = new THREE.Mesh(
+  new THREE.RingGeometry(OUTER_R, BSMT_R, 28),
+  floorMat
+);
+bsmtCeilMesh.rotation.x = Math.PI/2;
+bsmtCeilMesh.position.y = -(DESCENT + 5);
+scene.add(bsmtCeilMesh);
+
+// Arched entrance pillars at the base (where stairs meet basement)
+for(let i=0;i<4;i++){
+  const a = i*Math.PI/2;
+  const archPillar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, BSMT_H*0.7, 0.5),
+    new THREE.MeshStandardMaterial({color:0x1c1510,roughness:0.92,metalness:0.05})
+  );
+  archPillar.position.set(Math.sin(a)*(BSMT_R-0.8), -(DESCENT+5+BSMT_H*0.35), Math.cos(a)*(BSMT_R-0.8));
+  scene.add(archPillar);
+}
+
+// Wall torches in basement (4 evenly spaced)
+for(let i=0;i<4;i++){
+  const a = i*Math.PI/2 + Math.PI/4;
+  const btx = Math.sin(a)*(BSMT_R-0.8);
+  const btz = Math.cos(a)*(BSMT_R-0.8);
+  const bty = -(DESCENT + 5 + BSMT_H*0.4);
+
+  const bBody = new THREE.Mesh(
+    new THREE.BoxGeometry(0.1,0.5,0.1),
+    new THREE.MeshBasicMaterial({color:0x3a2010})
+  );
+  bBody.position.set(btx, bty-0.2, btz);
+  scene.add(bBody);
+
+  const bFlame = new THREE.Mesh(
+    new THREE.SphereGeometry(0.15,8,6),
+    new THREE.MeshBasicMaterial({color:0xff9922})
+  );
+  bFlame.position.set(btx, bty+0.1, btz);
+  scene.add(bFlame);
+
+  const bLight = new THREE.PointLight(0xff7733, 0, 16);
+  bLight.position.set(btx, bty, btz);
+  scene.add(bLight);
+  torchData.push({light:bLight, flame:bFlame, stepT:1.05+i*0.01, basePos:new THREE.Vector3(btx,bty,btz), isBasement:true});
+}
+
+// Store basement eye position for camera transition
+const BSMT_EYE_Y = BSMT_Y_BASE + 1.7;
+
+// ── SPIRAL STEPS ───────────────────────────
+const anglePerStep = (ROTS * Math.PI * 2) / STEPS;
+const stepD = STEP_R * anglePerStep * 0.82;
+const stepW = OUTER_R - INNER_R - 0.8;
+const riserH = DESCENT / STEPS;
+
+for(let i=0;i<STEPS;i++){
+  const t = i/STEPS;
+  const a = t * ROTS * Math.PI * 2;
+  const y = -(t * DESCENT);
+  const isLand = LANDING_STEPS.includes(i);
+
+  // TREAD
+  const td = isLand ? stepD*2.2 : stepD;
+  const tread = new THREE.Mesh(
+    new THREE.BoxGeometry(stepW, 0.13, td),
+    isLand ? landMat : sMat
+  );
+  tread.position.set(Math.sin(a)*STEP_R, y, Math.cos(a)*STEP_R);
+  tread.rotation.y = -a;
+  scene.add(tread);
+
+  // RISER (vertical face of each step)
+  const riser = new THREE.Mesh(
+    new THREE.BoxGeometry(stepW, riserH, 0.06),
+    sMat
+  );
+  riser.position.set(
+    Math.sin(a)*STEP_R,
+    y - riserH/2,
+    Math.cos(a)*STEP_R + (td/2+0.03) * Math.cos(a)
+  );
+  riser.rotation.y = -a;
+  scene.add(riser);
+
+  // INNER RAILING POST
+  if(i%2===0){
+    const railR = INNER_R + 0.5;
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(0.07,0.9,0.07),
+      railMat
+    );
+    post.position.set(Math.sin(a)*railR, y+0.5, Math.cos(a)*railR);
+    scene.add(post);
+  }
+
+  // TORCH AT LANDING
+  if(isLand){
+    const torchR = OUTER_R - 0.6;
+    const tx = Math.sin(a)*torchR;
+    const tz = Math.cos(a)*torchR;
+    const ty = y + 2.0;
+
+    // Torch bracket/body
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1,0.5,0.1),
+      new THREE.MeshBasicMaterial({color:0x3a2010})
+    );
+    body.position.set(tx, ty-0.2, tz);
+    scene.add(body);
+
+    // Flame
+    const flame = new THREE.Mesh(
+      new THREE.SphereGeometry(0.13,8,6),
+      new THREE.MeshBasicMaterial({color:0xff9922})
+    );
+    flame.position.set(tx, ty+0.1, tz);
+    scene.add(flame);
+
+    // Warm PointLight (starts at 0 intensity, brightens as camera approaches)
+    const pl = new THREE.PointLight(0xff7733, 0, 14);
+    pl.position.set(tx, ty, tz);
+    scene.add(pl);
+
+    torchData.push({light:pl, flame, stepT:t, basePos:new THREE.Vector3(tx,ty,tz)});
+  }
+}
+
+// ── INNER RAIL TOP (continuous TubeGeometry along inner edge) ──
+const railPts = [];
+for(let i=0;i<=STEPS;i++){
+  const t=i/STEPS;
+  const a=t*ROTS*Math.PI*2;
+  const y=-(t*DESCENT)+0.9;
+  const rr=INNER_R+0.5;
+  railPts.push(new THREE.Vector3(Math.sin(a)*rr, y, Math.cos(a)*rr));
+}
+const railCurve = new THREE.CatmullRomCurve3(railPts);
+const railTube = new THREE.Mesh(
+  new THREE.TubeGeometry(railCurve, STEPS*2, 0.04, 6, false),
+  railMat
+);
+scene.add(railTube);
+
+// ── DUST PARTICLES ─────────────────────────
+const dustCount = 300;
+const dustPos = new Float32Array(dustCount*3);
+const dustVel = new Float32Array(dustCount*3);
+for(let i=0;i<dustCount;i++){
+  const a=Math.random()*Math.PI*2;
+  const r=Math.random()*(OUTER_R-INNER_R)+INNER_R+0.2;
+  dustPos[i*3]   = Math.sin(a)*r;
+  dustPos[i*3+1] = -(Math.random()*(DESCENT+8));
+  dustPos[i*3+2] = Math.cos(a)*r;
+  dustVel[i*3]   = (Math.random()-.5)*0.002;
+  dustVel[i*3+1] = Math.random()*0.003+0.001;
+  dustVel[i*3+2] = (Math.random()-.5)*0.002;
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+const dustMesh = new THREE.Points(dustGeo,
+  new THREE.PointsMaterial({color:0x6a4822,size:0.04,transparent:true,opacity:0.5})
+);
+scene.add(dustMesh);
+
+// ── LIGHTING (tuned for MeshStandardMaterial PBR) ──
+const ambient = new THREE.AmbientLight(0x150e08, 2.0); // slightly warmer ambient
+scene.add(ambient);
+
+// Hemisphere light: warm from above (torch-like sky), cool from below
+const hemi = new THREE.HemisphereLight(0x2a1a08, 0x040302, 0.4);
+scene.add(hemi);
+
+// Dim "lantern" carried by the camera
+const lantern = new THREE.PointLight(0x6677cc, 0.35, 5);
+scene.add(lantern);
+
+// Top light (opening at top of shaft)
+const topLight = new THREE.DirectionalLight(0x111420, 0.3);
+topLight.position.set(0,10,0);
+scene.add(topLight);
+
+// ── CAMERA PATH (helix following the steps) ──
+const camPts = [];
+for(let i=0;i<=320;i++){
+  const t=i/320;
+  const a=t*ROTS*Math.PI*2;
+  const y=-(t*DESCENT)+EYE_H;
+  camPts.push(new THREE.Vector3(Math.sin(a)*STEP_R, y, Math.cos(a)*STEP_R));
+}
+const camPath = new THREE.CatmullRomCurve3(camPts,false,'catmullrom',0.5);
+
+// ═══════════════════════════════════════════════
+//   SCROLL & CAMERA LOGIC
+// ═══════════════════════════════════════════════
+let scrollProg  = 0;
+let targetProg  = 0;
+let camT        = 0;
+
+// Snap points in scroll-progress space (filled after sectionPanels defined)
+let snapTimer = null;
+let isSnapping = false;
+
+window.addEventListener('scroll',()=>{
+  const ms = document.documentElement.scrollHeight - window.innerHeight;
+  if(ms>0) targetProg = window.scrollY/ms;
+
+  // Cancel any pending snap while user is actively scrolling
+  if(snapTimer){ clearTimeout(snapTimer); snapTimer=null; }
+
+  if(!isSnapping){
+    snapTimer = setTimeout(()=>{
+      const ms2 = document.documentElement.scrollHeight - innerHeight;
+      if(ms2<=0) return;
+      // Build snap points: hero(0), each landing, contact(1)
+      const pts = [0];
+      sectionPanels.forEach(sec=>{
+        pts.push(sec.t * 0.9 + 0.05);
+      });
+      pts.push(0.97);
+      // Find nearest
+      const cur = window.scrollY/ms2;
+      const nearest = pts.reduce((a,b)=>Math.abs(b-cur)<Math.abs(a-cur)?b:a);
+      if(Math.abs(nearest-cur) > 0.008){ // only snap if not already close
+        isSnapping = true;
+        window.scrollTo({top: nearest*ms2, behavior:'smooth'});
+        setTimeout(()=>{ isSnapping=false; }, 1200);
+      }
+    }, 2000);
+  }
+},{passive:true});
+
+// Map scroll → camera t
+function scrollToCamT(s){
+  if(s<0.05) return 0;
+  if(s>0.95) return 1;
+  return (s-0.05)/0.9;
+}
+
+// ── CONTENT SECTIONS ─────────────────────────
+const sectionPanels = [
+  {el:document.getElementById('panel-0'), t: LANDING_STEPS[0]/STEPS},
+  {el:document.getElementById('panel-1'), t: LANDING_STEPS[1]/STEPS},
+  {el:document.getElementById('panel-2'), t: LANDING_STEPS[2]/STEPS},
+  {el:document.getElementById('panel-3'), t: LANDING_STEPS[3]/STEPS},
+  {el:document.getElementById('panel-4'), t: LANDING_STEPS[4]/STEPS},
+  {el:document.getElementById('panel-5'), t: LANDING_STEPS[5]/STEPS},
+];
+
+const locationNames = [
+  'About Me — The First Landing','Skills — The Arsenal',
+  'Projects — Forged Artefacts','Certifications — The Seals',
+  'Education — The Scrolls','Developer Journey — The Chronicle'
+];
+
+function updateUI(ct, sp){
+  // Hero
+  const heroEl = document.getElementById('hero-panel');
+  const hFade = sp < 0.04 ? 1 : Math.max(0, 1-(sp-0.04)/0.05);
+  heroEl.style.opacity = hFade;
+  heroEl.style.pointerEvents = hFade>0.1?'auto':'none';
+
+  // Contact
+  const cEl = document.getElementById('contact-panel');
+  const cFade = sp>0.91 ? Math.min(1,(sp-0.91)/0.06) : 0;
+  cEl.style.opacity = cFade;
+  cEl.classList.toggle('active', cFade>0.3);
+
+  // Crosshair hides when panel is active
+  let anyPanelActive = false;
+
+  // Section panels — tighter ranges so only ONE is ever visible at a time
+  sectionPanels.forEach((sec,idx)=>{
+    const dist = Math.abs(ct - sec.t);
+    const FULL_RANGE = 0.038;   // fully opaque within ±3.8% of landing t
+    const FADE_RANGE = 0.075;   // starts fading at ±7.5%, gone by here
+    let op = 0;
+    if(dist < FULL_RANGE) op = 1;
+    else if(dist < FADE_RANGE) op = 1-(dist-FULL_RANGE)/(FADE_RANGE-FULL_RANGE);
+    op = Math.max(0, Math.min(1, op));
+
+    sec.el.style.opacity = op;
+    sec.el.classList.toggle('active', op>0.35);
+    sec.el.style.pointerEvents = op>0.2?'all':'none';
+
+    if(op>0.3) anyPanelActive = true;
+
+    // Update location label
+    if(op>0.5) document.getElementById('location').textContent = locationNames[idx];
+  });
+
+  if(!anyPanelActive && hFade < 0.3 && cFade < 0.3)
+    document.getElementById('location').textContent = 'Descending...';
+  if(hFade>0.3) document.getElementById('location').textContent = 'Descend the Spiral Staircase';
+  if(cFade>0.3) document.getElementById('location').textContent = 'The Ground Floor — Contact';
+
+  document.getElementById('crosshair').style.opacity = anyPanelActive || hFade>0.3 ? 0 : 0.15;
+
+  // Progress dots
+  // 0=hero, 1-6=landings, 7=contact
+  const dots = document.querySelectorAll('.p-dot');
+  let activeIdx = 0;
+  if(sp>0.91) activeIdx=7;
+  else {
+    sectionPanels.forEach((sec,idx)=>{
+      if(Math.abs(ct-sec.t)<0.1) activeIdx=idx+1;
+    });
+    if(sp<0.07) activeIdx=0;
+  }
+  dots.forEach((d,i)=>d.classList.toggle('active',i===activeIdx));
+}
+
+// ══════════════════════════════════════════════
+//   ANIMATION LOOP — with idle renderer pause
+// ══════════════════════════════════════════════
+let clock = 0;
+let prevPos = new THREE.Vector3();
+let lastActivityTime = Date.now();
+let renderPaused = false;
+const IDLE_PAUSE_MS = 2500; // pause after 2.5s of no scroll
+
+// Wake up renderer on any scroll
+window.addEventListener('scroll', ()=>{ lastActivityTime=Date.now(); renderPaused=false; }, {passive:true});
+
+function animate(){
+  requestAnimationFrame(animate);
+
+  const now = Date.now();
+  const timeSinceActivity = now - lastActivityTime;
+
+  // Always run lerp so camera catches up even as it pauses
+  const prevScroll = scrollProg;
+  scrollProg += (targetProg - scrollProg) * 0.07;
+  const stillLerping = Math.abs(targetProg - scrollProg) > 0.0002;
+
+  // Torches always flicker (cheap, keeps scene alive)
+  clock += 0.016;
+
+  // Pause heavy render when idle and lerp settled
+  if(timeSinceActivity > IDLE_PAUSE_MS && !stillLerping){
+    if(!renderPaused){
+      // Do one final render to settle the scene cleanly
+      renderPaused = true;
+      renderer.render(scene, camera);
+    }
+    return; // skip the rest of the frame
+  }
+  renderPaused = false;
+
+  camT = scrollToCamT(scrollProg);
+  const clampedT = Math.max(0, Math.min(0.999, camT));
+
+  // ── CAMERA: helix OR basement blend ──────────────
+  const HELIX_END_T = 0.87; // camT where staircase ends, basement begins
+  let camX, camY, camZ, lookX, lookY, lookZ;
+
+  if(clampedT <= HELIX_END_T){
+    const cPos = camPath.getPoint(clampedT / HELIX_END_T * 0.999);
+    const lookT2 = Math.min(0.999, clampedT / HELIX_END_T * 0.999 + 0.009);
+    const lookPt = camPath.getPoint(lookT2);
+    const bob  = Math.sin(clock*3.5)*0.018 * (1 - clampedT*0.4);
+    const sway = Math.sin(clock*1.8)*0.012;
+    camX  = cPos.x + sway; camY = cPos.y + bob; camZ = cPos.z;
+    lookX = lookPt.x; lookY = lookPt.y; lookZ = lookPt.z;
+  } else {
+    // Smoothstep blend from helix end into basement
+    const raw  = (clampedT - HELIX_END_T) / (1 - HELIX_END_T);
+    const bt   = raw*raw*(3-2*raw); // smoothstep easing
+
+    const helixEnd  = camPath.getPoint(0.999);
+    const helixLook = camPath.getPoint(0.999);
+
+    // Basement: stand in centre at eye height, look at far wall
+    const bX = 0, bY = BSMT_EYE_Y, bZ = 2.5;
+    const blX = 0, blY = BSMT_EYE_Y - 0.1, blZ = -(BSMT_R - 1.5);
+
+    camX = helixEnd.x  + (bX  - helixEnd.x)  * bt;
+    camY = helixEnd.y  + (bY  - helixEnd.y)  * bt;
+    camZ = helixEnd.z  + (bZ  - helixEnd.z)  * bt;
+    lookX = helixLook.x + (blX - helixLook.x) * bt;
+    lookY = helixLook.y + (blY - helixLook.y) * bt;
+    lookZ = helixLook.z + (blZ - helixLook.z) * bt;
+
+    // Gradually illuminate all basement torches as we enter
+    torchData.forEach(td2=>{
+      if(td2.isBasement) td2.light.intensity = bt * 3.5 * (0.8 + Math.sin(clock*8)*0.2);
+    });
+  }
+
+  camera.position.set(camX, camY, camZ);
+  camera.up.set(0,1,0);
+  camera.lookAt(lookX, lookY, lookZ);
+
+  // Lantern follows camera
+  lantern.position.copy(camera.position);
+
+  // Torch flicker + proximity brightness (staircase torches only)
+  torchData.forEach(({light,flame,stepT,isBasement},idx)=>{
+    if(isBasement) return; // basement torches handled separately above
+    const dist = Math.abs(camT - stepT);
+    const prox = Math.max(0, 1 - dist/0.18);
+    const flicker = 0.78 + Math.sin(clock*(7+idx*0.7))*0.13 + Math.sin(clock*14.3*(idx+1))*0.06;
+    light.intensity = prox * 4.5 * flicker;
+
+    // Flame scale + color flicker
+    const fs = 0.7 + Math.sin(clock*10+idx)*0.22;
+    flame.scale.setScalar(fs);
+    const r = 1.0;
+    const g = 0.4 + Math.sin(clock*9+idx)*0.15;
+    flame.material.color.setRGB(r, g, 0.05);
+  });
+
+  // Animate dust particles
+  const pa = dustGeo.attributes.position;
+  for(let i=0;i<dustCount;i++){
+    pa.array[i*3]  += dustVel[i*3]   * (0.5+Math.sin(clock+i)*0.5);
+    pa.array[i*3+1]+= dustVel[i*3+1];
+    pa.array[i*3+2]+= dustVel[i*3+2] * (0.5+Math.cos(clock*0.7+i)*0.5);
+    // Wrap Y: if particle rises above shaft top, teleport to bottom
+    if(pa.array[i*3+1]>5){
+      pa.array[i*3+1] = -(DESCENT+4);
+    }
+  }
+  pa.needsUpdate = true;
+
+  updateUI(camT, scrollProg);
+  renderer.render(scene, camera);
+}
+animate();
+
+// ══════════════════════════════════════════════
+//   RESIZE
+// ══════════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ══════════════════════════════════════════════
+//   JUMP TO SECTION
+// ══════════════════════════════════════════════
+function jumpToSection(idx){
+  const ms = document.documentElement.scrollHeight - innerHeight;
+  let target=0;
+  if(idx===0) target=0;
+  else if(idx===7) target=ms;
+  else{
+    // idx 1-6 → sections 0-5
+    const sec = sectionPanels[idx-1];
+    // sec.t → camT; camT = (sp-0.05)/0.9 → sp = camT*0.9+0.05
+    const sp = sec.t*0.9+0.05;
+    target = sp*ms;
+  }
+  window.scrollTo({top:target,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════
+//   TYPING ANIMATION
+// ══════════════════════════════════════════════
+const phrases=['Computer Science Engineering Student','Data Science Enthusiast','Data Analysis & Visualisation','Problem Solver & Builder'];
+let pi=0,ci=0,del=false;
+const tEl=document.getElementById('typing');
+function typeLoop(){
+  const ph=phrases[pi];
+  if(!del){tEl.textContent=ph.substring(0,ci+1);ci++;
+    if(ci===ph.length){del=true;setTimeout(typeLoop,2000);return;}}
+  else{tEl.textContent=ph.substring(0,ci-1);ci--;
+    if(ci===0){del=false;pi=(pi+1)%phrases.length;}}
+  setTimeout(typeLoop,del?42:70);
+}
+setTimeout(typeLoop,800);
+
+// ══════════════════════════════════════════════
+//   CUSTOM CURSOR
+// ══════════════════════════════════════════════
+const cur=document.getElementById('cur');
+const curR=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx+'px';cur.style.top=my+'px';
+});
+(function loop(){
+  rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;
+  curR.style.left=rx+'px';curR.style.top=ry+'px';
+  requestAnimationFrame(loop);
+})();
+
+// ══════════════════════════════════════════════
+//   TERMINAL EASTER EGG
+// ══════════════════════════════════════════════
+const CMDS={
+  help:`Commands available in this dungeon:
+  help             — Show this scroll
+  projects         — List the artefacts
+  skills           — Display the arsenal
+  contact          — Reveal contact runes
+  education        — Show the scrolls
+  whoami           — Identify the builder
+  download resume  — Save CV to local system
+  clear            — Purge the scroll
+  exit             — Seal the terminal`,
+  projects:`⚔ Forged Artefacts:
+
+  [I]   NYC Motor Vehicle Collisions Analysis
+        → Excel · Pivot Tables · EDA · 200K+ records
+        → github.com/Amit-Krishna/NYC-Road-Accident-Analysis
+  
+  [II]  Cancer Risk Analysis Dashboard
+        → Power BI · DAX · Data Modeling · Dynamic Filtering
+        → github.com/Amit-Krishna/Cancer-dashboard-analysis
+  
+  [III] Agricultural Dataset Analysis
+        → Python · Pandas · Scikit-learn · Linear Regression
+        → github.com/Amit-Krishna/Python-Visualization-Data-Science-Project`,
+  skills:`⚔ Arsenal:
+  
+  Languages:  C++  Python  Java  C
+  Frameworks: Scikit-learn  HTML  CSS  Next.js
+  Databases:  MySQL  Supabase
+  Tools:      Git  GitHub  VS Code  Anaconda
+              Figma  Excel  Power BI`,
+  contact:`✦ Contact Runes:
+  
+  Email:    amit.krishna.11d@gmail.com
+  GitHub:   github.com/Amit-Krishna
+  LinkedIn: linkedin.com/in/amit-krishna/
+  LeetCode: leetcode.com/u/Amit-Krishna/
+  Location: Punjab, India`,
+  education:`📜 The Scrolls:
+  
+  B.Tech CSE  |  LPU Punjab    |  CGPA 8.63  |  2023–Present
+  Intermediate|  Montfort IC   |  75%        |  2023
+  Matric      |  CMS Cambridge |  89%        |  2021`,
+  whoami:`◈ Identity Revealed:
+  ──────────────────────────────────────────
+  Name:   Amit Krishna
+  Role:   CS Engineer & Data Science Student
+  Focus:  Data Analysis · Visualisation · Systems
+  Base:   Punjab, India
+  Status: Open to opportunities
+  CGPA:   8.63 @ LPU`
+};
+
+function openTerm(){
+  document.getElementById('terminal').classList.add('open');
+  document.getElementById('ti').focus();
+}
+function closeTerm(){
+  document.getElementById('terminal').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='`'){e.preventDefault();
+    const t=document.getElementById('terminal');
+    t.classList.contains('open')?closeTerm():openTerm();}
+  if(e.key==='Escape') closeTerm();
+});
+const ti=document.getElementById('ti');
+const tb=document.getElementById('term-body');
+ti.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  const cmd=ti.value.trim().toLowerCase();
+  addLine(`<span style="color:#00d050">amit@dungeon:~$</span> ${cmd}`,'tl');
+  ti.value='';
+  if(!cmd) return;
+
+  // Special: download resume
+  if(cmd==='download resume'){
+    addLine('Initializing download sequence...','ts2');
+    setTimeout(()=>{
+      const lnk=document.createElement('a');
+      lnk.href='CVVVV.pdf'; lnk.download='Amit_Krishna_CV.pdf'; lnk.click();
+      addLine('<span style="color:#00d050">✓ Success:</span> Resume downloaded to local system.','tl');
+      addLine(' ','to'); tb.scrollTop=tb.scrollHeight;
+    },1000);
+    return;
+  }
+
+  if(cmd==='clear'){tb.innerHTML='<div class="to"> </div>';return;}
+  if(cmd==='exit'){addLine('Sealing the terminal...','ts2');setTimeout(closeTerm,600);return;}
+  if(CMDS[cmd]) addLine(CMDS[cmd],'to');
+  else addLine(`Command not found: '${cmd}'. Type 'help' for available commands.`,'te');
+  addLine(' ','to');
+  tb.scrollTop=tb.scrollHeight;
+});
+function addLine(html,cls){
+  const d=document.createElement('div');d.className=cls;d.innerHTML=html;
+  tb.appendChild(d);tb.scrollTop=tb.scrollHeight;
+}
+
+// ══════════════════════════════════════════════
+//   LOADING SCREEN
+// ══════════════════════════════════════════════
+(function runLoader(){
+  const bar  = document.getElementById('loader-bar');
+  const pct  = document.getElementById('loader-pct');
+  const loader = document.getElementById('loader');
+  let p = 0;
+  // Simulate texture generation progress over ~1.8s
+  const steps = [
+    {target:30, ms:300},
+    {target:60, ms:400},
+    {target:85, ms:350},
+    {target:100,ms:300},
+  ];
+  let si = 0;
+  function nextStep(){
+    if(si>=steps.length){
+      // Done — fade out
+      setTimeout(()=>{
+        loader.classList.add('fade-out');
+        setTimeout(()=>{ loader.style.display='none'; },1050);
+      },200);
+      return;
+    }
+    const {target,ms} = steps[si++];
+    const frames = Math.ceil(ms/16);
+    const step = (target-p)/frames;
+    let f=0;
+    function tick(){
+      p = Math.min(target, p+step);
+      bar.style.width = p+'%';
+      pct.textContent = Math.floor(p)+'%';
+      if(++f<frames && p<target){ requestAnimationFrame(tick); }
+      else{ nextStep(); }
+    }
+    requestAnimationFrame(tick);
+  }
+  nextStep();
+})();
+
+// ══════════════════════════════════════════════
+//   FAST TRAVEL / QUICK VIEW TOGGLE
+// ══════════════════════════════════════════════
+let currentView = '3d';
+function setView(mode){
+  currentView = mode;
+  const qv = document.getElementById('quick-view');
+  document.getElementById('btn-3d').classList.toggle('active', mode==='3d');
+  document.getElementById('btn-2d').classList.toggle('active', mode==='2d');
+  if(mode==='2d'){
+    qv.classList.add('open');
+    qv.scrollTop = 0;
+  } else {
+    qv.classList.remove('open');
+  }
+}
+
+// ══════════════════════════════════════════════
+//   AMBIENT SOUND (opt-in)
+// ══════════════════════════════════════════════
+let audioCtx = null, droneNode = null, soundOn = false;
+
+function toggleSound(){
+  const btn = document.getElementById('sound-btn');
+  if(!soundOn){
+    // Build a simple cave drone with Web Audio API — no file dependency
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    // Low rumble: two detuned oscillators through a low-pass + gain
+    const masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime+2);
+    masterGain.connect(audioCtx.destination);
+
+    const freqs = [55, 58.3, 82.4, 110];
+    freqs.forEach((f,i)=>{
+      const osc = audioCtx.createOscillator();
+      const g   = audioCtx.createGain();
+      const lp  = audioCtx.createBiquadFilter();
+      osc.type = i<2?'sine':'triangle';
+      osc.frequency.setValueAtTime(f, audioCtx.currentTime);
+      g.gain.setValueAtTime(0.2+i*0.05, audioCtx.currentTime);
+      lp.type='lowpass'; lp.frequency.setValueAtTime(200,audioCtx.currentTime);
+      osc.connect(g); g.connect(lp); lp.connect(masterGain);
+      osc.start();
+    });
+
+    // Subtle crackle: filtered noise
+    const bufSize = audioCtx.sampleRate*2;
+    const buf = audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) data[i]=(Math.random()*2-1)*0.015;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buf; noise.loop = true;
+    const noiseLp = audioCtx.createBiquadFilter();
+    noiseLp.type='bandpass'; noiseLp.frequency.setValueAtTime(80,audioCtx.currentTime); noiseLp.Q.setValueAtTime(0.5,audioCtx.currentTime);
+    noise.connect(noiseLp); noiseLp.connect(masterGain);
+    noise.start();
+
+    droneNode = masterGain;
+    soundOn = true;
+    btn.textContent = '🔊';
+  } else {
+    if(droneNode){
+      droneNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
+      setTimeout(()=>{ audioCtx.close(); audioCtx=null; droneNode=null; },1600);
+    }
+    soundOn = false;
+    btn.textContent = '🔇';
+  }
+}
+</script>
+</body>
+</html>
