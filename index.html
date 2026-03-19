@@ -8,7 +8,11 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{overflow-x:hidden}
-body{background:#000;overflow-y:scroll;overflow-x:hidden;cursor:none}
+body{background:#000;overflow-y:scroll;overflow-x:hidden}
+/* Force hide native cursor on ALL elements — custom cursor handles it */
+*{cursor:none!important}
+/* Mobile restores cursor */
+@media(max-width:768px){*{cursor:auto!important}}
 canvas{position:fixed;inset:0;z-index:0;display:block}
 #scroll-space{height:900vh;pointer-events:none;position:relative;z-index:-1}
 
@@ -21,11 +25,14 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
 /* CUSTOM CURSOR */
 #cur{position:fixed;width:10px;height:10px;background:#e8922a;border-radius:50%;
   pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
+  left:-100px;top:-100px;
   box-shadow:0 0 12px #e8922a,0 0 24px rgba(232,146,42,0.5);
-  transition:width .15s,height .15s}
-#cur-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(232,146,42,0.4);
-  border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);
-  transition:left .12s ease,top .12s ease}
+  transition:width .15s,height .15s,opacity .2s}
+#cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(232,146,42,0.35);
+  border-radius:50%;pointer-events:none;z-index:9997;transform:translate(-50%,-50%);
+  left:-100px;top:-100px;
+  /* NO left/top transition — rAF handles smoothing */
+  transition:width .2s,height .2s,opacity .2s}
 
 /* HERO PANEL */
 #hero-panel{
@@ -301,14 +308,97 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
 
 /* MOBILE */
 @media(max-width:768px){
-  body{cursor:auto}
   #cur,#cur-ring,#progress-nav{display:none}
   .panel-inner{padding:24px 20px}
   .panel-title{font-size:24px}
   .hero-name{font-size:clamp(40px,10vw,72px)}
 }
 
-/* ══ LOADING SCREEN ══════════════════════════ */
+/* ══ 1. PANEL SPRING micro-interaction ══════════ */
+@keyframes panelSettle{
+  0%  {transform:translate(-50%,-50%) scale(1.025)}
+  60% {transform:translate(-50%,-50%) scale(0.997)}
+  80% {transform:translate(-50%,-50%) scale(1.003)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
+.section-panel.active{ animation: panelSettle .55s cubic-bezier(.22,1,.36,1) forwards; }
+
+/* ══ 2. HERO PARALLAX layers ════════════════════ */
+#hero-panel{ perspective: 600px; }
+.hero-layer-back{ will-change:transform; transition:transform .1s linear; }
+.hero-layer-front{ will-change:transform; transition:transform .1s linear; }
+
+/* ══ 3. STAT PROGRESS BARS ═════════════════════ */
+.stat-bar-wrap{
+  margin-top:10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.stat-bar-row{display:flex;align-items:center;gap:10px}
+.stat-bar-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;
+  color:rgba(232,146,42,0.5);width:120px;flex-shrink:0;
+}
+.stat-bar-track{
+  flex:1;height:3px;background:rgba(232,146,42,0.08);border-radius:2px;overflow:hidden;
+}
+.stat-bar-fill{
+  height:100%;width:0;border-radius:2px;
+  background:linear-gradient(to right,#a04010,#e8922a,#f0d080);
+  box-shadow:0 0 6px rgba(232,146,42,0.5);
+  transition:width 1.2s cubic-bezier(.22,1,.36,1);
+}
+.section-panel.active .stat-bar-fill{ width:var(--w,50%); }
+.stat-bar-val{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,146,42,0.6);
+  width:34px;text-align:right;flex-shrink:0;
+}
+
+/* ══ 4. STATUS BADGE ════════════════════════════ */
+#status-badge{
+  position:fixed;top:70px;right:20px;z-index:200;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(10,6,2,0.85);border:1px solid rgba(40,200,80,0.25);
+  border-radius:6px;padding:7px 14px;backdrop-filter:blur(12px);
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(80,220,100,0.7);
+  letter-spacing:1px;
+}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;background:#28c850;flex-shrink:0;
+  box-shadow:0 0 6px #28c850;
+  animation:statusPulse 2.4s ease-in-out infinite;
+}
+@keyframes statusPulse{
+  0%,100%{box-shadow:0 0 4px #28c850;opacity:.8}
+  50%{box-shadow:0 0 12px #28c850,0 0 20px rgba(40,200,80,0.3);opacity:1}
+}
+
+/* ══ 5. CURSOR TRAIL ════════════════════════════ */
+.trail-dot{
+  position:fixed;pointer-events:none;z-index:9990;
+  border-radius:50%;background:#e8922a;
+  transform:translate(-50%,-50%);
+  left:-100px;top:-100px;
+}
+
+/* ══ 6. SECTION STING (visual flash on torch light) ═ */
+#sting-flash{
+  position:fixed;inset:0;z-index:18;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(232,146,42,0.06) 0%,transparent 70%);
+  opacity:0;transition:opacity .08s ease;
+}
+
+/* ══ 7. SWIPE HINT (mobile) ═════════════════════ */
+#swipe-hint{
+  position:fixed;bottom:52px;left:50%;transform:translateX(-50%);
+  z-index:25;pointer-events:none;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;
+  color:rgba(232,146,42,0.3);text-transform:uppercase;
+  display:none;
+}
+@media(max-width:768px){ #swipe-hint{ display:block; } }
+@keyframes swipeFade{0%,100%{opacity:.3;transform:translateX(-50%) translateY(0)}50%{opacity:.7;transform:translateX(-50%) translateY(-4px)}}
+#swipe-hint{ animation:swipeFade 2.5s ease-in-out infinite; }
+
 #loader{
   position:fixed;inset:0;z-index:99999;
   background:#000;
@@ -538,18 +628,38 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
   </div>
 </div>
 
+<!-- STATUS BADGE -->
+<div id="status-badge">
+  <div class="status-dot"></div>
+  Open to Opportunities
+</div>
+
+<!-- SECTION STING FLASH -->
+<div id="sting-flash"></div>
+
+<!-- SWIPE HINT (mobile) -->
+<div id="swipe-hint">↑ swipe to ascend &nbsp;·&nbsp; ↓ descend ↓</div>
+
+<!-- CURSOR TRAIL CONTAINER -->
+<div id="trail-container"></div>
+
 <!-- HERO -->
 <div id="hero-panel">
-  <div class="hero-sub">◈ The Descent Begins ◈</div>
-  <div class="hero-name">Amit Krishna</div>
-  <div class="hero-title"><span id="typing"></span><span class="typing-cur"></span></div>
-  <div class="hero-desc">Passionate about building efficient software, solving complex problems, and creating impactful digital products.</div>
-  <div class="hero-btns">
-    <button class="dungeon-btn primary" onclick="jumpToSection(3)">⚡ View Projects</button>
-    <button class="dungeon-btn" onclick="jumpToSection(7)">✉ Contact</button>
-    <a href="CVVVV.pdf" download="Amit_Krishna_CV.pdf" class="dungeon-btn">↓ Resume</a>
+  <div class="hero-layer-back" id="hero-back" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+    <div style="text-align:center;opacity:0.18;font-family:'Cinzel',serif;font-size:clamp(80px,14vw,160px);font-weight:700;color:#e8922a;letter-spacing:8px;user-select:none;filter:blur(2px)">AK</div>
   </div>
-  <div class="scroll-hint">↓ &nbsp; scroll to descend &nbsp; ↓</div>
+  <div class="hero-layer-front" id="hero-front" style="position:relative;z-index:1;text-align:center;padding:0 24px">
+    <div class="hero-sub">◈ The Descent Begins ◈</div>
+    <div class="hero-name">Amit Krishna</div>
+    <div class="hero-title"><span id="typing"></span><span class="typing-cur"></span></div>
+    <div class="hero-desc">Passionate about building efficient software, solving complex problems, and creating impactful digital products.</div>
+    <div class="hero-btns">
+      <button class="dungeon-btn primary" onclick="jumpToSection(3)">⚡ View Projects</button>
+      <button class="dungeon-btn" onclick="jumpToSection(7)">✉ Contact</button>
+      <a href="CVVVV.pdf" download="Amit_Krishna_CV.pdf" class="dungeon-btn">↓ Resume</a>
+    </div>
+    <div class="scroll-hint">↓ &nbsp; scroll to descend &nbsp; ↓</div>
+  </div>
 </div>
 
 <!-- PANEL 0: ABOUT -->
@@ -655,7 +765,11 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
           </div>
           <div class="proj-title">NYC Motor Vehicle Collisions Analysis</div>
           <div class="proj-desc">Exploratory data analysis on <span class="accent">200K+</span> NYC collision records to uncover accident patterns, risk factors, and high-impact crash zones. Improved dataset reliability by <span class="accent">~30%</span> through feature engineering &amp; missing data handling. Interactive pivot dashboard boosted insight discovery by <span class="accent">~45%</span>.</div>
-          <div class="tech-tags"><span class="tech-tag">Excel</span><span class="tech-tag">Pivot Tables</span><span class="tech-tag">Pivot Charts</span><span class="tech-tag">EDA</span><span class="tech-tag">Data Cleaning</span></div>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar-row"><span class="stat-bar-label">Dataset Reliability</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:30%"></div></div><span class="stat-bar-val">+30%</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">Insight Discovery</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:45%"></div></div><span class="stat-bar-val">+45%</span></div>
+          </div>
+          <div class="tech-tags" style="margin-top:12px"><span class="tech-tag">Excel</span><span class="tech-tag">Pivot Tables</span><span class="tech-tag">Pivot Charts</span><span class="tech-tag">EDA</span><span class="tech-tag">Data Cleaning</span></div>
         </div>
 
         <div class="proj-card">
@@ -670,7 +784,11 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
           </div>
           <div class="proj-title">Cancer Risk Analysis Dashboard</div>
           <div class="proj-desc">Interactive Power BI dashboard analysing cancer risk patterns using demographic, lifestyle, and clinical factors — smoking habits, BMI, diet &amp; family history. Multi-page dashboards with <span class="accent">dynamic filtering</span> and drill-down capabilities across cancer types, enabling efficient patient risk profile exploration.</div>
-          <div class="tech-tags"><span class="tech-tag">Power BI</span><span class="tech-tag">DAX</span><span class="tech-tag">Data Modeling</span><span class="tech-tag">Data Viz</span></div>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar-row"><span class="stat-bar-label">Filter Efficiency</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:72%"></div></div><span class="stat-bar-val">72%</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">Data Coverage</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:90%"></div></div><span class="stat-bar-val">90%</span></div>
+          </div>
+          <div class="tech-tags" style="margin-top:12px"><span class="tech-tag">Power BI</span><span class="tech-tag">DAX</span><span class="tech-tag">Data Modeling</span><span class="tech-tag">Data Viz</span></div>
         </div>
 
         <div class="proj-card">
@@ -685,7 +803,11 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
           </div>
           <div class="proj-title">Agricultural Dataset Analysis</div>
           <div class="proj-desc">End-to-end data analysis exploring commodity pricing trends, market behaviour, and state-wise distribution. Built heatmaps, pairplots, boxplots &amp; trend analyses. Developed a <span class="accent">linear regression model</span> to predict modal prices, evaluated with MSE for basic price forecasting.</div>
-          <div class="tech-tags"><span class="tech-tag">Python</span><span class="tech-tag">Pandas</span><span class="tech-tag">Matplotlib</span><span class="tech-tag">Seaborn</span><span class="tech-tag">Scikit-learn</span></div>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar-row"><span class="stat-bar-label">Data Quality</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:85%"></div></div><span class="stat-bar-val">85%</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">Model Accuracy</span><div class="stat-bar-track"><div class="stat-bar-fill" style="--w:78%"></div></div><span class="stat-bar-val">78%</span></div>
+          </div>
+          <div class="tech-tags" style="margin-top:12px"><span class="tech-tag">Python</span><span class="tech-tag">Pandas</span><span class="tech-tag">Matplotlib</span><span class="tech-tag">Seaborn</span><span class="tech-tag">Scikit-learn</span></div>
         </div>
 
       </div>
@@ -900,634 +1022,570 @@ canvas{position:fixed;inset:0;z-index:0;display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════
-//   THREE.JS DUNGEON SPIRAL STAIRCASE
+//   DEVICE QUALITY TIER
 // ═══════════════════════════════════════════════
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+const isLowEnd  = isMobile || (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 2);
 
+const Q = {
+  pixelRatio:  isLowEnd ? 1 : Math.min(devicePixelRatio, 2),
+  cylSegs:     isLowEnd ? 16 : 28,       // cylinder radial segments
+  dustCount:   isLowEnd ? 80  : 220,     // floating dust particles
+  texSz:       isLowEnd ? 128 : 512,     // stone texture canvas size
+  tubeSegs:    isLowEnd ? 48  : 96,      // handrail tube segments
+  fpsTarget:   isLowEnd ? 30  : 60,      // frame rate cap
+  fogDensity:  isLowEnd ? 0.06 : 0.048,
+  usePBR:      !isLowEnd,               // MeshStandard vs MeshLambert
+};
+const MS_PER_FRAME = 1000 / Q.fpsTarget;
+
+// ═══════════════════════════════════════════════
+//   RENDERER
+// ═══════════════════════════════════════════════
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isLowEnd, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Q.pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = isLowEnd ? 1.2 : 1.0;
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x000000, 0.05);
+scene.fog = new THREE.FogExp2(0x000000, Q.fogDensity);
 
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.05, 80);
 
-// ── PROCEDURAL STONE TEXTURE ──────────────────
-function makeStone(w=512,h=512,darkBase=true){
-  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-  const ctx=cv.getContext('2d');
-  const base=darkBase?[18,14,10]:[30,24,18];
-  const id=ctx.createImageData(w,h);
+// ═══════════════════════════════════════════════
+//   PROCEDURAL STONE TEXTURE (cached, reused)
+// ═══════════════════════════════════════════════
+const _texCache = {};
+function makeStone(key, w, h, darkBase){
+  if(_texCache[key]) return _texCache[key];
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  const base = darkBase ? [18,14,10] : [30,24,18];
+  const id = ctx.createImageData(w, h);
   for(let i=0;i<id.data.length;i+=4){
     const n=Math.random()*22;
-    id.data[i]=base[0]+n;id.data[i+1]=base[1]+n*.9;
-    id.data[i+2]=base[2]+n*.8;id.data[i+3]=255;
+    id.data[i]=base[0]+n; id.data[i+1]=base[1]+n*.9;
+    id.data[i+2]=base[2]+n*.8; id.data[i+3]=255;
   }
-  ctx.putImageData(id,0,0);
-  // horizontal mortar
+  ctx.putImageData(id, 0, 0);
   for(let y=0;y<h;y+=20+Math.floor(Math.random()*10)){
     ctx.fillStyle=`rgba(0,0,0,${.4+Math.random()*.3})`;
-    ctx.fillRect(0,y,w,1+Math.floor(Math.random()*2));
+    ctx.fillRect(0, y, w, 1+Math.floor(Math.random()*2));
   }
-  // vertical block lines
   let off=0;
   for(let y=0;y<h;y+=20){
     off=(off+40+Math.random()*24)%w;
     for(let x=off;x<w+off;x+=40+Math.random()*20){
       ctx.fillStyle=`rgba(0,0,0,${.15+Math.random()*.2})`;
-      ctx.fillRect(x%w,y,1,20);
+      ctx.fillRect(x%w, y, 1, 20);
     }
   }
-  const t=new THREE.CanvasTexture(cv);
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  _texCache[key] = t;
   return t;
 }
 
-// ── SCENE CONSTANTS ───────────────────────────
-const OUTER_R  = 7.0;   // outer shaft radius
-const INNER_R  = 1.3;   // central pillar radius
-const STEP_R   = 4.4;   // mid-step radius (camera walks here)
-const STEPS    = 56;    // total step count
-const ROTS     = 2.7;   // total rotations of spiral
-const DESCENT  = 28;    // total Y drop
-const SHAFT_H  = DESCENT + 14;
-const EYE_H    = 1.55;
+// ── BUILD STONE TEXTURES (reused across materials) ──
+const sz = Q.texSz;
+const wallTex  = makeStone('wall', sz, sz, true);     wallTex.repeat.set(8,5);
+const stepTex  = makeStone('step', sz>>1, sz>>2, false); stepTex.repeat.set(2,1);
+const pilTex   = makeStone('pil',  sz>>1, sz, true);
+const bsFlrTex = makeStone('bsfl', sz, sz, true);    bsFlrTex.repeat.set(6,6);
+// Basement wall reuses wall texture with different repeat
+const bsWallTex = wallTex; // same canvas, different repeat set on material
 
-// Which steps are content landings
+// ── MATERIAL FACTORY ──────────────────────────
+function mat(opts){
+  if(Q.usePBR){
+    return new THREE.MeshStandardMaterial(Object.assign({roughness:0.93,metalness:0.04},opts));
+  } else {
+    // Strip PBR-only props for Lambert
+    const {roughness,metalness,...rest} = opts;
+    return new THREE.MeshLambertMaterial(rest);
+  }
+}
+
+const wallMat  = mat({color:0x1a1410, map:wallTex,  side:THREE.BackSide, roughness:0.95, metalness:0.05});
+const pMat     = mat({color:0x111008, map:pilTex,   roughness:0.98, metalness:0.02});
+const sMat     = mat({color:0x1e1814, map:stepTex,  roughness:0.9,  metalness:0.05});
+const landMat  = mat({color:0x252018,               roughness:0.88, metalness:0.08});
+const floorMat = mat({color:0x0c0a07,               roughness:0.95, metalness:0.02});
+const railMat  = mat({color:0x2a1e14,               roughness:0.85, metalness:0.15});
+const pillarMat= mat({color:0x1c1510,               roughness:0.92, metalness:0.05}); // shared for arch pillars
+
+// ── SCENE CONSTANTS ───────────────────────────
+const OUTER_R = 7.0;
+const INNER_R = 1.3;
+const STEP_R  = 4.4;
+const STEPS   = 56;
+const ROTS    = 2.7;
+const DESCENT = 28;
+const SHAFT_H = DESCENT + 14;
+const EYE_H   = 1.55;
 const LANDING_STEPS = [7, 15, 24, 33, 41, 49];
 
-// ── MATERIALS (MeshStandardMaterial for realistic PBR lighting) ──────────
-const wallTex = makeStone(512,512,true); wallTex.repeat.set(10,6);
-const stepTex = makeStone(256,128,false); stepTex.repeat.set(2,1);
+// ── SHAFT & PILLAR ────────────────────────────
+const shaftY = -(SHAFT_H/2 - 4);
+const shaft = new THREE.Mesh(new THREE.CylinderGeometry(OUTER_R,OUTER_R,SHAFT_H,Q.cylSegs,3,true), wallMat);
+shaft.position.y = shaftY; scene.add(shaft);
 
-const wallMat  = new THREE.MeshStandardMaterial({color:0x1a1410,map:wallTex,side:THREE.BackSide,roughness:0.95,metalness:0.05});
-const pMat     = new THREE.MeshStandardMaterial({color:0x111008,map:makeStone(256,512,true),roughness:0.98,metalness:0.02});
-const sMat     = new THREE.MeshStandardMaterial({color:0x1e1814,map:stepTex,roughness:0.9,metalness:0.05});
-const landMat  = new THREE.MeshStandardMaterial({color:0x252018,roughness:0.88,metalness:0.08});
-const floorMat = new THREE.MeshStandardMaterial({color:0x0c0a07,roughness:0.95,metalness:0.02});
-const railMat  = new THREE.MeshStandardMaterial({color:0x2a1e14,roughness:0.85,metalness:0.15});
+const pillar = new THREE.Mesh(new THREE.CylinderGeometry(INNER_R,INNER_R+0.2,SHAFT_H,Q.cylSegs>>1), pMat);
+pillar.position.y = shaftY; scene.add(pillar);
 
-// ── SHAFT OUTER CYLINDER (BackSide = inside of shaft) ──
-const shaft = new THREE.Mesh(
-  new THREE.CylinderGeometry(OUTER_R, OUTER_R, SHAFT_H, 32, 4, true),
-  wallMat
-);
-shaft.position.y = -(SHAFT_H/2 - 4);
-scene.add(shaft);
+const ceiling = new THREE.Mesh(new THREE.RingGeometry(INNER_R+0.2,OUTER_R,Q.cylSegs), floorMat);
+ceiling.rotation.x = Math.PI/2; ceiling.position.y = 5; scene.add(ceiling);
 
-// ── CENTRAL PILLAR ─────────────────────────
-const pillar = new THREE.Mesh(
-  new THREE.CylinderGeometry(INNER_R, INNER_R+0.2, SHAFT_H, 12),
-  pMat
-);
-pillar.position.y = -(SHAFT_H/2 - 4);
-scene.add(pillar);
+const floorMesh = new THREE.Mesh(new THREE.CircleGeometry(OUTER_R,Q.cylSegs), floorMat);
+floorMesh.rotation.x = -Math.PI/2; floorMesh.position.y = -(DESCENT+5); scene.add(floorMesh);
 
-// ── CEILING ────────────────────────────────
-const ceiling = new THREE.Mesh(
-  new THREE.RingGeometry(INNER_R+0.2, OUTER_R, 32),
-  floorMat
-);
-ceiling.rotation.x = Math.PI/2;
-ceiling.position.y = 5;
-scene.add(ceiling);
+// ── TORCHDATA (populated below) ───────────────
+const torchData = [];
 
-// ── FLOOR AT BOTTOM ────────────────────────
-const floor = new THREE.Mesh(
-  new THREE.CircleGeometry(OUTER_R, 32),
-  floorMat
-);
-floor.rotation.x = -Math.PI/2;
-floor.position.y = -(DESCENT + 5);
-scene.add(floor);
+// ── BASEMENT ──────────────────────────────────
+const BSMT_R = 11.0, BSMT_H = 7.0;
+const BSMT_Y_BASE = -(DESCENT + 5 + BSMT_H);
+const BSMT_EYE_Y  = BSMT_Y_BASE + 1.7;
 
-// torchData declared here so both basement + spiral steps can push into it
-const torchData = []; // {light, flame, stepT, isBasement?}
+const bsWallMat = mat({color:0x130e0a, map:bsWallTex, side:THREE.BackSide, roughness:0.97, metalness:0.03});
+bsWallMat.map = makeStone('bswall', sz, sz, true); bsWallMat.map.repeat.set(10,3);
 
-// ── BASEMENT ROOM (opens at bottom of shaft) ──
-const BSMT_R  = 11.0;
-const BSMT_H  = 7.0;
-const BSMT_Y_BASE = -(DESCENT + 5 + BSMT_H); // bottom of basement
+const bsWall = new THREE.Mesh(new THREE.CylinderGeometry(BSMT_R,BSMT_R,BSMT_H,Q.cylSegs,2,true), bsWallMat);
+bsWall.position.y = -(DESCENT+5+BSMT_H/2); scene.add(bsWall);
 
-// Wider cylindrical basement walls
-const bsmtWallMat = new THREE.MeshStandardMaterial({
-  color:0x130e0a, map:makeStone(512,512,true), side:THREE.BackSide, roughness:0.97, metalness:0.03
-});
-bsmtWallMat.map.repeat.set(12,4);
-const bsmtWall = new THREE.Mesh(
-  new THREE.CylinderGeometry(BSMT_R, BSMT_R, BSMT_H, 28, 3, true),
-  bsmtWallMat
-);
-bsmtWall.position.y = -(DESCENT + 5 + BSMT_H/2);
-scene.add(bsmtWall);
+const bsFloor = new THREE.Mesh(new THREE.CircleGeometry(BSMT_R,Q.cylSegs), mat({color:0x100d0a, map:bsFlrTex, roughness:0.95, metalness:0.02}));
+bsFloor.rotation.x = -Math.PI/2; bsFloor.position.y = BSMT_Y_BASE; scene.add(bsFloor);
 
-// Basement floor (large stone slab)
-const bsmtFloorTex = makeStone(512,512,true); bsmtFloorTex.repeat.set(8,8);
-const bsmtFloorMesh = new THREE.Mesh(
-  new THREE.CircleGeometry(BSMT_R, 32),
-  new THREE.MeshStandardMaterial({color:0x100d0a, map:bsmtFloorTex, roughness:0.95, metalness:0.02})
-);
-bsmtFloorMesh.rotation.x = -Math.PI/2;
-bsmtFloorMesh.position.y = BSMT_Y_BASE;
-scene.add(bsmtFloorMesh);
+const bsCeil = new THREE.Mesh(new THREE.RingGeometry(OUTER_R,BSMT_R,Q.cylSegs), floorMat);
+bsCeil.rotation.x = Math.PI/2; bsCeil.position.y = -(DESCENT+5); scene.add(bsCeil);
 
-// Basement ceiling / transition ring (shaft meets basement)
-const bsmtCeilMesh = new THREE.Mesh(
-  new THREE.RingGeometry(OUTER_R, BSMT_R, 28),
-  floorMat
-);
-bsmtCeilMesh.rotation.x = Math.PI/2;
-bsmtCeilMesh.position.y = -(DESCENT + 5);
-scene.add(bsmtCeilMesh);
-
-// Arched entrance pillars at the base (where stairs meet basement)
+// 4 arch pillars — shared material, InstancedMesh
+const archGeo = new THREE.BoxGeometry(0.5, BSMT_H*0.7, 0.5);
+const archInst = new THREE.InstancedMesh(archGeo, pillarMat, 4);
+const _m4 = new THREE.Matrix4();
 for(let i=0;i<4;i++){
-  const a = i*Math.PI/2;
-  const archPillar = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, BSMT_H*0.7, 0.5),
-    new THREE.MeshStandardMaterial({color:0x1c1510,roughness:0.92,metalness:0.05})
-  );
-  archPillar.position.set(Math.sin(a)*(BSMT_R-0.8), -(DESCENT+5+BSMT_H*0.35), Math.cos(a)*(BSMT_R-0.8));
-  scene.add(archPillar);
+  const a=i*Math.PI/2;
+  _m4.makeTranslation(Math.sin(a)*(BSMT_R-0.8), -(DESCENT+5+BSMT_H*0.35), Math.cos(a)*(BSMT_R-0.8));
+  archInst.setMatrixAt(i, _m4);
 }
+archInst.instanceMatrix.needsUpdate=true; scene.add(archInst);
 
-// Wall torches in basement (4 evenly spaced)
+// Basement torches (4) — InstancedMesh for flames
+const bFlameGeo = new THREE.SphereGeometry(0.15,5,4);
+const bFlameMat = new THREE.MeshBasicMaterial({color:0xff9922});
+const bFlameInst = new THREE.InstancedMesh(bFlameGeo, bFlameMat, 4);
+scene.add(bFlameInst);
+
 for(let i=0;i<4;i++){
   const a = i*Math.PI/2 + Math.PI/4;
-  const btx = Math.sin(a)*(BSMT_R-0.8);
-  const btz = Math.cos(a)*(BSMT_R-0.8);
-  const bty = -(DESCENT + 5 + BSMT_H*0.4);
+  const btx=Math.sin(a)*(BSMT_R-0.8), btz=Math.cos(a)*(BSMT_R-0.8);
+  const bty=-(DESCENT+5+BSMT_H*0.4);
+  _m4.makeTranslation(btx, bty+0.1, btz); bFlameInst.setMatrixAt(i, _m4);
 
-  const bBody = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1,0.5,0.1),
-    new THREE.MeshBasicMaterial({color:0x3a2010})
-  );
-  bBody.position.set(btx, bty-0.2, btz);
-  scene.add(bBody);
-
-  const bFlame = new THREE.Mesh(
-    new THREE.SphereGeometry(0.15,8,6),
-    new THREE.MeshBasicMaterial({color:0xff9922})
-  );
-  bFlame.position.set(btx, bty+0.1, btz);
-  scene.add(bFlame);
-
-  const bLight = new THREE.PointLight(0xff7733, 0, 16);
-  bLight.position.set(btx, bty, btz);
-  scene.add(bLight);
-  torchData.push({light:bLight, flame:bFlame, stepT:1.05+i*0.01, basePos:new THREE.Vector3(btx,bty,btz), isBasement:true});
+  const bLight=new THREE.PointLight(0xff7733,0,16);
+  bLight.position.set(btx,bty,btz); scene.add(bLight);
+  torchData.push({light:bLight, instIdx:i, instMesh:bFlameInst, stepT:1.05+i*0.01, isBasement:true});
 }
+bFlameInst.instanceMatrix.needsUpdate=true;
 
-// Store basement eye position for camera transition
-const BSMT_EYE_Y = BSMT_Y_BASE + 1.7;
+// ── SPIRAL STEPS (InstancedMesh — massive draw call reduction) ───────────
+const anglePerStep = (ROTS*Math.PI*2)/STEPS;
+const stepD = STEP_R*anglePerStep*0.82;
+const stepW = OUTER_R-INNER_R-0.8;
+const riserH= DESCENT/STEPS;
 
-// ── SPIRAL STEPS ───────────────────────────
-const anglePerStep = (ROTS * Math.PI * 2) / STEPS;
-const stepD = STEP_R * anglePerStep * 0.82;
-const stepW = OUTER_R - INNER_R - 0.8;
-const riserH = DESCENT / STEPS;
+// Separate normal treads vs landing treads (different depth)
+const normalCount  = STEPS - LANDING_STEPS.length;
+const landingCount = LANDING_STEPS.length;
+
+const treadGeoN = new THREE.BoxGeometry(stepW, 0.13, stepD);
+const treadGeoL = new THREE.BoxGeometry(stepW, 0.13, stepD*2.2);
+const riserGeo  = new THREE.BoxGeometry(stepW, riserH, 0.06);
+const postGeo   = new THREE.BoxGeometry(0.07, 0.9, 0.07);
+
+const treadInstN = new THREE.InstancedMesh(treadGeoN, sMat,    normalCount);
+const treadInstL = new THREE.InstancedMesh(treadGeoL, landMat, landingCount);
+const riserInst  = new THREE.InstancedMesh(riserGeo,  sMat,    STEPS);
+const postInst   = new THREE.InstancedMesh(postGeo,   railMat, Math.ceil(STEPS/2));
+
+// Torch geometry reused for all 6 staircase torches
+const torchBodyGeo = new THREE.BoxGeometry(0.1,0.5,0.1);
+const torchBodyMat = new THREE.MeshBasicMaterial({color:0x3a2010});
+const flameGeo     = new THREE.SphereGeometry(0.13,5,4);
+const flameMat     = new THREE.MeshBasicMaterial({color:0xff9922});
+const flameInst    = new THREE.InstancedMesh(flameGeo, flameMat, LANDING_STEPS.length);
+scene.add(flameInst);
+
+const _q = new THREE.Quaternion();
+const _euler = new THREE.Euler();
+let ni=0, li=0, ri=0, pi=0;
 
 for(let i=0;i<STEPS;i++){
-  const t = i/STEPS;
-  const a = t * ROTS * Math.PI * 2;
-  const y = -(t * DESCENT);
-  const isLand = LANDING_STEPS.includes(i);
+  const t=i/STEPS, a=t*ROTS*Math.PI*2, y=-(t*DESCENT);
+  const isLand=LANDING_STEPS.includes(i);
+  const td=isLand?stepD*2.2:stepD;
+  _euler.set(0,-a,0); _q.setFromEuler(_euler);
 
-  // TREAD
-  const td = isLand ? stepD*2.2 : stepD;
-  const tread = new THREE.Mesh(
-    new THREE.BoxGeometry(stepW, 0.13, td),
-    isLand ? landMat : sMat
-  );
-  tread.position.set(Math.sin(a)*STEP_R, y, Math.cos(a)*STEP_R);
-  tread.rotation.y = -a;
-  scene.add(tread);
+  // Tread
+  _m4.compose(new THREE.Vector3(Math.sin(a)*STEP_R, y, Math.cos(a)*STEP_R), _q, new THREE.Vector3(1,1,1));
+  if(isLand){ treadInstL.setMatrixAt(li++, _m4); } else { treadInstN.setMatrixAt(ni++, _m4); }
 
-  // RISER (vertical face of each step)
-  const riser = new THREE.Mesh(
-    new THREE.BoxGeometry(stepW, riserH, 0.06),
-    sMat
+  // Riser
+  _m4.compose(
+    new THREE.Vector3(Math.sin(a)*STEP_R, y-riserH/2, Math.cos(a)*STEP_R+(td/2+0.03)*Math.cos(a)),
+    _q, new THREE.Vector3(1,1,1)
   );
-  riser.position.set(
-    Math.sin(a)*STEP_R,
-    y - riserH/2,
-    Math.cos(a)*STEP_R + (td/2+0.03) * Math.cos(a)
-  );
-  riser.rotation.y = -a;
-  scene.add(riser);
+  riserInst.setMatrixAt(ri++, _m4);
 
-  // INNER RAILING POST
+  // Railing post (every 2nd step)
   if(i%2===0){
-    const railR = INNER_R + 0.5;
-    const post = new THREE.Mesh(
-      new THREE.BoxGeometry(0.07,0.9,0.07),
-      railMat
-    );
-    post.position.set(Math.sin(a)*railR, y+0.5, Math.cos(a)*railR);
-    scene.add(post);
+    const rr=INNER_R+0.5;
+    _m4.makeTranslation(Math.sin(a)*rr, y+0.5, Math.cos(a)*rr);
+    postInst.setMatrixAt(pi++, _m4);
   }
 
-  // TORCH AT LANDING
+  // Torch at landing
   if(isLand){
-    const torchR = OUTER_R - 0.6;
-    const tx = Math.sin(a)*torchR;
-    const tz = Math.cos(a)*torchR;
-    const ty = y + 2.0;
+    const lidx = LANDING_STEPS.indexOf(i);
+    const torchR=OUTER_R-0.6;
+    const tx=Math.sin(a)*torchR, tz=Math.cos(a)*torchR, ty=y+2.0;
 
-    // Torch bracket/body
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1,0.5,0.1),
-      new THREE.MeshBasicMaterial({color:0x3a2010})
-    );
-    body.position.set(tx, ty-0.2, tz);
-    scene.add(body);
+    // Torch body (static mesh, one per landing — only 6)
+    const tbody=new THREE.Mesh(torchBodyGeo, torchBodyMat);
+    tbody.position.set(tx,ty-0.2,tz); scene.add(tbody);
 
-    // Flame
-    const flame = new THREE.Mesh(
-      new THREE.SphereGeometry(0.13,8,6),
-      new THREE.MeshBasicMaterial({color:0xff9922})
-    );
-    flame.position.set(tx, ty+0.1, tz);
-    scene.add(flame);
+    // Flame instance
+    _m4.makeTranslation(tx, ty+0.1, tz); flameInst.setMatrixAt(lidx, _m4);
 
-    // Warm PointLight (starts at 0 intensity, brightens as camera approaches)
-    const pl = new THREE.PointLight(0xff7733, 0, 14);
-    pl.position.set(tx, ty, tz);
-    scene.add(pl);
-
-    torchData.push({light:pl, flame, stepT:t, basePos:new THREE.Vector3(tx,ty,tz)});
+    // Light
+    const pl=new THREE.PointLight(0xff7733,0,14);
+    pl.position.set(tx,ty,tz); scene.add(pl);
+    torchData.push({light:pl, instIdx:lidx, instMesh:flameInst, stepT:t});
   }
 }
 
-// ── INNER RAIL TOP (continuous TubeGeometry along inner edge) ──
-const railPts = [];
+treadInstN.instanceMatrix.needsUpdate=true; scene.add(treadInstN);
+treadInstL.instanceMatrix.needsUpdate=true; scene.add(treadInstL);
+riserInst.instanceMatrix.needsUpdate=true;  scene.add(riserInst);
+postInst.instanceMatrix.needsUpdate=true;   scene.add(postInst);
+flameInst.instanceMatrix.needsUpdate=true;
+
+// ── HANDRAIL TUBE ─────────────────────────────
+const railPts=[];
 for(let i=0;i<=STEPS;i++){
-  const t=i/STEPS;
-  const a=t*ROTS*Math.PI*2;
-  const y=-(t*DESCENT)+0.9;
-  const rr=INNER_R+0.5;
-  railPts.push(new THREE.Vector3(Math.sin(a)*rr, y, Math.cos(a)*rr));
+  const t=i/STEPS, a=t*ROTS*Math.PI*2;
+  railPts.push(new THREE.Vector3(Math.sin(a)*(INNER_R+0.5), -(t*DESCENT)+0.9, Math.cos(a)*(INNER_R+0.5)));
 }
-const railCurve = new THREE.CatmullRomCurve3(railPts);
-const railTube = new THREE.Mesh(
-  new THREE.TubeGeometry(railCurve, STEPS*2, 0.04, 6, false),
+const railTube=new THREE.Mesh(
+  new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPts), Q.tubeSegs, 0.04, 5, false),
   railMat
 );
 scene.add(railTube);
 
-// ── DUST PARTICLES ─────────────────────────
-const dustCount = 300;
-const dustPos = new Float32Array(dustCount*3);
-const dustVel = new Float32Array(dustCount*3);
-for(let i=0;i<dustCount;i++){
-  const a=Math.random()*Math.PI*2;
-  const r=Math.random()*(OUTER_R-INNER_R)+INNER_R+0.2;
-  dustPos[i*3]   = Math.sin(a)*r;
-  dustPos[i*3+1] = -(Math.random()*(DESCENT+8));
-  dustPos[i*3+2] = Math.cos(a)*r;
-  dustVel[i*3]   = (Math.random()-.5)*0.002;
-  dustVel[i*3+1] = Math.random()*0.003+0.001;
-  dustVel[i*3+2] = (Math.random()-.5)*0.002;
+// ── DUST PARTICLES ────────────────────────────
+const DC = Q.dustCount;
+const dustPos=new Float32Array(DC*3), dustVel=new Float32Array(DC*3);
+for(let i=0;i<DC;i++){
+  const a=Math.random()*Math.PI*2, r=Math.random()*(OUTER_R-INNER_R)+INNER_R+0.2;
+  dustPos[i*3]=Math.sin(a)*r; dustPos[i*3+1]=-(Math.random()*(DESCENT+8)); dustPos[i*3+2]=Math.cos(a)*r;
+  dustVel[i*3]=(Math.random()-.5)*.002; dustVel[i*3+1]=Math.random()*.003+.001; dustVel[i*3+2]=(Math.random()-.5)*.002;
 }
-const dustGeo = new THREE.BufferGeometry();
+const dustGeo=new THREE.BufferGeometry();
 dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
-const dustMesh = new THREE.Points(dustGeo,
-  new THREE.PointsMaterial({color:0x6a4822,size:0.04,transparent:true,opacity:0.5})
-);
-scene.add(dustMesh);
+scene.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({color:0x6a4822,size:isLowEnd?0.06:0.04,transparent:true,opacity:0.45})));
 
-// ── LIGHTING (tuned for MeshStandardMaterial PBR) ──
-const ambient = new THREE.AmbientLight(0x150e08, 2.0); // slightly warmer ambient
-scene.add(ambient);
+// ── LIGHTING ──────────────────────────────────
+scene.add(new THREE.AmbientLight(0x150e08, isLowEnd ? 2.5 : 2.0));
+if(!isLowEnd) scene.add(new THREE.HemisphereLight(0x2a1a08, 0x040302, 0.4));
+const lantern=new THREE.PointLight(0x6677cc, 0.35, 5); scene.add(lantern);
+const topLight=new THREE.DirectionalLight(0x111420,0.3); topLight.position.set(0,10,0); scene.add(topLight);
 
-// Hemisphere light: warm from above (torch-like sky), cool from below
-const hemi = new THREE.HemisphereLight(0x2a1a08, 0x040302, 0.4);
-scene.add(hemi);
-
-// Dim "lantern" carried by the camera
-const lantern = new THREE.PointLight(0x6677cc, 0.35, 5);
-scene.add(lantern);
-
-// Top light (opening at top of shaft)
-const topLight = new THREE.DirectionalLight(0x111420, 0.3);
-topLight.position.set(0,10,0);
-scene.add(topLight);
-
-// ── CAMERA PATH (helix following the steps) ──
-const camPts = [];
-for(let i=0;i<=320;i++){
-  const t=i/320;
-  const a=t*ROTS*Math.PI*2;
-  const y=-(t*DESCENT)+EYE_H;
-  camPts.push(new THREE.Vector3(Math.sin(a)*STEP_R, y, Math.cos(a)*STEP_R));
+// ── CAMERA PATH ───────────────────────────────
+const camPts=[];
+for(let i=0;i<=200;i++){
+  const t=i/200, a=t*ROTS*Math.PI*2;
+  camPts.push(new THREE.Vector3(Math.sin(a)*STEP_R, -(t*DESCENT)+EYE_H, Math.cos(a)*STEP_R));
 }
-const camPath = new THREE.CatmullRomCurve3(camPts,false,'catmullrom',0.5);
+const camPath=new THREE.CatmullRomCurve3(camPts,false,'catmullrom',0.5);
 
 // ═══════════════════════════════════════════════
-//   SCROLL & CAMERA LOGIC
+//   SCROLL & SNAP
 // ═══════════════════════════════════════════════
-let scrollProg  = 0;
-let targetProg  = 0;
-let camT        = 0;
-
-// Snap points in scroll-progress space (filled after sectionPanels defined)
-let snapTimer = null;
-let isSnapping = false;
+let scrollProg=0, targetProg=0, camT=0;
+let snapTimer=null, isSnapping=false;
+let lastActivityTime=Date.now(), renderPaused=false;
 
 window.addEventListener('scroll',()=>{
-  const ms = document.documentElement.scrollHeight - window.innerHeight;
-  if(ms>0) targetProg = window.scrollY/ms;
-
-  // Cancel any pending snap while user is actively scrolling
-  if(snapTimer){ clearTimeout(snapTimer); snapTimer=null; }
-
+  const ms=document.documentElement.scrollHeight-innerHeight;
+  if(ms>0) targetProg=window.scrollY/ms;
+  lastActivityTime=Date.now(); renderPaused=false;
+  if(snapTimer){clearTimeout(snapTimer);snapTimer=null;}
   if(!isSnapping){
-    snapTimer = setTimeout(()=>{
-      const ms2 = document.documentElement.scrollHeight - innerHeight;
-      if(ms2<=0) return;
-      // Build snap points: hero(0), each landing, contact(1)
-      const pts = [0];
-      sectionPanels.forEach(sec=>{
-        pts.push(sec.t * 0.9 + 0.05);
-      });
-      pts.push(0.97);
-      // Find nearest
-      const cur = window.scrollY/ms2;
-      const nearest = pts.reduce((a,b)=>Math.abs(b-cur)<Math.abs(a-cur)?b:a);
-      if(Math.abs(nearest-cur) > 0.008){ // only snap if not already close
-        isSnapping = true;
-        window.scrollTo({top: nearest*ms2, behavior:'smooth'});
-        setTimeout(()=>{ isSnapping=false; }, 1200);
-      }
-    }, 2000);
+    snapTimer=setTimeout(()=>{
+      const ms2=document.documentElement.scrollHeight-innerHeight; if(ms2<=0)return;
+      const pts=[0]; sectionPanels.forEach(s=>pts.push(s.t*0.9+0.05)); pts.push(0.97);
+      const cur=window.scrollY/ms2;
+      const nearest=pts.reduce((a,b)=>Math.abs(b-cur)<Math.abs(a-cur)?b:a);
+      if(Math.abs(nearest-cur)>0.008){ isSnapping=true; window.scrollTo({top:nearest*ms2,behavior:'smooth'}); setTimeout(()=>{isSnapping=false;},1200); }
+    },2000);
   }
 },{passive:true});
 
-// Map scroll → camera t
-function scrollToCamT(s){
-  if(s<0.05) return 0;
-  if(s>0.95) return 1;
-  return (s-0.05)/0.9;
-}
+function scrollToCamT(s){ if(s<0.05)return 0; if(s>0.95)return 1; return(s-0.05)/0.9; }
 
 // ── CONTENT SECTIONS ─────────────────────────
-const sectionPanels = [
-  {el:document.getElementById('panel-0'), t: LANDING_STEPS[0]/STEPS},
-  {el:document.getElementById('panel-1'), t: LANDING_STEPS[1]/STEPS},
-  {el:document.getElementById('panel-2'), t: LANDING_STEPS[2]/STEPS},
-  {el:document.getElementById('panel-3'), t: LANDING_STEPS[3]/STEPS},
-  {el:document.getElementById('panel-4'), t: LANDING_STEPS[4]/STEPS},
-  {el:document.getElementById('panel-5'), t: LANDING_STEPS[5]/STEPS},
+const sectionPanels=[
+  {el:document.getElementById('panel-0'),t:LANDING_STEPS[0]/STEPS},
+  {el:document.getElementById('panel-1'),t:LANDING_STEPS[1]/STEPS},
+  {el:document.getElementById('panel-2'),t:LANDING_STEPS[2]/STEPS},
+  {el:document.getElementById('panel-3'),t:LANDING_STEPS[3]/STEPS},
+  {el:document.getElementById('panel-4'),t:LANDING_STEPS[4]/STEPS},
+  {el:document.getElementById('panel-5'),t:LANDING_STEPS[5]/STEPS},
 ];
+const locationNames=['About Me — The First Landing','Skills — The Arsenal','Projects — Forged Artefacts','Certifications — The Seals','Education — The Scrolls','Developer Journey — The Chronicle'];
 
-const locationNames = [
-  'About Me — The First Landing','Skills — The Arsenal',
-  'Projects — Forged Artefacts','Certifications — The Seals',
-  'Education — The Scrolls','Developer Journey — The Chronicle'
-];
+function updateUI(ct,sp){
+  const heroEl=document.getElementById('hero-panel');
+  const hFade=sp<0.04?1:Math.max(0,1-(sp-0.04)/0.05);
+  heroEl.style.opacity=hFade; heroEl.style.pointerEvents=hFade>0.1?'auto':'none';
 
-function updateUI(ct, sp){
-  // Hero
-  const heroEl = document.getElementById('hero-panel');
-  const hFade = sp < 0.04 ? 1 : Math.max(0, 1-(sp-0.04)/0.05);
-  heroEl.style.opacity = hFade;
-  heroEl.style.pointerEvents = hFade>0.1?'auto':'none';
+  const cEl=document.getElementById('contact-panel');
+  const cFade=sp>0.91?Math.min(1,(sp-0.91)/0.06):0;
+  cEl.style.opacity=cFade; cEl.classList.toggle('active',cFade>0.3);
 
-  // Contact
-  const cEl = document.getElementById('contact-panel');
-  const cFade = sp>0.91 ? Math.min(1,(sp-0.91)/0.06) : 0;
-  cEl.style.opacity = cFade;
-  cEl.classList.toggle('active', cFade>0.3);
-
-  // Crosshair hides when panel is active
-  let anyPanelActive = false;
-
-  // Section panels — tighter ranges so only ONE is ever visible at a time
+  let anyPanel=false;
   sectionPanels.forEach((sec,idx)=>{
-    const dist = Math.abs(ct - sec.t);
-    const FULL_RANGE = 0.038;   // fully opaque within ±3.8% of landing t
-    const FADE_RANGE = 0.075;   // starts fading at ±7.5%, gone by here
-    let op = 0;
-    if(dist < FULL_RANGE) op = 1;
-    else if(dist < FADE_RANGE) op = 1-(dist-FULL_RANGE)/(FADE_RANGE-FULL_RANGE);
-    op = Math.max(0, Math.min(1, op));
-
-    sec.el.style.opacity = op;
-    sec.el.classList.toggle('active', op>0.35);
-    sec.el.style.pointerEvents = op>0.2?'all':'none';
-
-    if(op>0.3) anyPanelActive = true;
-
-    // Update location label
-    if(op>0.5) document.getElementById('location').textContent = locationNames[idx];
+    const dist=Math.abs(ct-sec.t);
+    let op=dist<0.038?1:dist<0.075?1-(dist-0.038)/0.037:0;
+    op=Math.max(0,Math.min(1,op));
+    sec.el.style.opacity=op; sec.el.classList.toggle('active',op>0.35);
+    sec.el.style.pointerEvents=op>0.2?'all':'none';
+    if(op>0.3)anyPanel=true;
+    if(op>0.5)document.getElementById('location').textContent=locationNames[idx];
   });
+  if(!anyPanel&&hFade<0.3&&cFade<0.3)document.getElementById('location').textContent='Descending...';
+  if(hFade>0.3)document.getElementById('location').textContent='Descend the Spiral Staircase';
+  if(cFade>0.3)document.getElementById('location').textContent='The Basement Floor — Contact';
+  document.getElementById('crosshair').style.opacity=anyPanel||hFade>0.3?0:0.15;
 
-  if(!anyPanelActive && hFade < 0.3 && cFade < 0.3)
-    document.getElementById('location').textContent = 'Descending...';
-  if(hFade>0.3) document.getElementById('location').textContent = 'Descend the Spiral Staircase';
-  if(cFade>0.3) document.getElementById('location').textContent = 'The Ground Floor — Contact';
-
-  document.getElementById('crosshair').style.opacity = anyPanelActive || hFade>0.3 ? 0 : 0.15;
-
-  // Progress dots
-  // 0=hero, 1-6=landings, 7=contact
-  const dots = document.querySelectorAll('.p-dot');
-  let activeIdx = 0;
-  if(sp>0.91) activeIdx=7;
-  else {
-    sectionPanels.forEach((sec,idx)=>{
-      if(Math.abs(ct-sec.t)<0.1) activeIdx=idx+1;
-    });
-    if(sp<0.07) activeIdx=0;
-  }
-  dots.forEach((d,i)=>d.classList.toggle('active',i===activeIdx));
+  const dots=document.querySelectorAll('.p-dot');
+  let aidx=0;
+  if(sp>0.91)aidx=7;
+  else{ sectionPanels.forEach((s,i)=>{if(Math.abs(ct-s.t)<0.1)aidx=i+1;}); if(sp<0.07)aidx=0; }
+  dots.forEach((d,i)=>d.classList.toggle('active',i===aidx));
 }
 
-// ══════════════════════════════════════════════
-//   ANIMATION LOOP — with idle renderer pause
-// ══════════════════════════════════════════════
-let clock = 0;
-let prevPos = new THREE.Vector3();
-let lastActivityTime = Date.now();
-let renderPaused = false;
-const IDLE_PAUSE_MS = 2500; // pause after 2.5s of no scroll
+// ═══════════════════════════════════════════════
+//   ANIMATION LOOP — fps-capped + idle pause
+// ═══════════════════════════════════════════════
+let clock=0, lastFrameTime=0;
+const _sc=new THREE.Matrix4(), _sv=new THREE.Vector3(1,1,1), _sq=new THREE.Quaternion();
 
-// Wake up renderer on any scroll
-window.addEventListener('scroll', ()=>{ lastActivityTime=Date.now(); renderPaused=false; }, {passive:true});
-
-function animate(){
+function animate(now){
   requestAnimationFrame(animate);
 
-  const now = Date.now();
-  const timeSinceActivity = now - lastActivityTime;
+  // FPS cap
+  if(now - lastFrameTime < MS_PER_FRAME) return;
+  lastFrameTime = now;
 
-  // Always run lerp so camera catches up even as it pauses
-  const prevScroll = scrollProg;
-  scrollProg += (targetProg - scrollProg) * 0.07;
-  const stillLerping = Math.abs(targetProg - scrollProg) > 0.0002;
+  // Lerp scroll
+  scrollProg+=(targetProg-scrollProg)*0.07;
+  const stillLerping=Math.abs(targetProg-scrollProg)>0.0002;
 
-  // Torches always flicker (cheap, keeps scene alive)
-  clock += 0.016;
-
-  // Pause heavy render when idle and lerp settled
-  if(timeSinceActivity > IDLE_PAUSE_MS && !stillLerping){
-    if(!renderPaused){
-      // Do one final render to settle the scene cleanly
-      renderPaused = true;
-      renderer.render(scene, camera);
-    }
-    return; // skip the rest of the frame
+  // Idle pause: if no activity for 2.5s AND lerp settled, stop rendering
+  if(Date.now()-lastActivityTime>2500 && !stillLerping){
+    if(!renderPaused){ renderPaused=true; renderer.render(scene,camera); }
+    return;
   }
-  renderPaused = false;
+  renderPaused=false;
+  clock+=isLowEnd?0.020:0.016;
 
-  camT = scrollToCamT(scrollProg);
-  const clampedT = Math.max(0, Math.min(0.999, camT));
+  camT=scrollToCamT(scrollProg);
+  const clampedT=Math.max(0,Math.min(0.999,camT));
+  const HELIX_END=0.87;
 
-  // ── CAMERA: helix OR basement blend ──────────────
-  const HELIX_END_T = 0.87; // camT where staircase ends, basement begins
-  let camX, camY, camZ, lookX, lookY, lookZ;
-
-  if(clampedT <= HELIX_END_T){
-    const cPos = camPath.getPoint(clampedT / HELIX_END_T * 0.999);
-    const lookT2 = Math.min(0.999, clampedT / HELIX_END_T * 0.999 + 0.009);
-    const lookPt = camPath.getPoint(lookT2);
-    const bob  = Math.sin(clock*3.5)*0.018 * (1 - clampedT*0.4);
-    const sway = Math.sin(clock*1.8)*0.012;
-    camX  = cPos.x + sway; camY = cPos.y + bob; camZ = cPos.z;
-    lookX = lookPt.x; lookY = lookPt.y; lookZ = lookPt.z;
+  // ── CAMERA ──────────────────────────────────
+  let camX,camY,camZ,lookX,lookY,lookZ;
+  if(clampedT<=HELIX_END){
+    const p=camPath.getPoint(clampedT/HELIX_END*0.999);
+    const lp=camPath.getPoint(Math.min(0.999,clampedT/HELIX_END*0.999+0.009));
+    const bob=Math.sin(clock*3.5)*0.018*(1-clampedT*0.4);
+    const sway=Math.sin(clock*1.8)*0.012;
+    camX=p.x+sway; camY=p.y+bob; camZ=p.z;
+    lookX=lp.x; lookY=lp.y; lookZ=lp.z;
   } else {
-    // Smoothstep blend from helix end into basement
-    const raw  = (clampedT - HELIX_END_T) / (1 - HELIX_END_T);
-    const bt   = raw*raw*(3-2*raw); // smoothstep easing
-
-    const helixEnd  = camPath.getPoint(0.999);
-    const helixLook = camPath.getPoint(0.999);
-
-    // Basement: stand in centre at eye height, look at far wall
-    const bX = 0, bY = BSMT_EYE_Y, bZ = 2.5;
-    const blX = 0, blY = BSMT_EYE_Y - 0.1, blZ = -(BSMT_R - 1.5);
-
-    camX = helixEnd.x  + (bX  - helixEnd.x)  * bt;
-    camY = helixEnd.y  + (bY  - helixEnd.y)  * bt;
-    camZ = helixEnd.z  + (bZ  - helixEnd.z)  * bt;
-    lookX = helixLook.x + (blX - helixLook.x) * bt;
-    lookY = helixLook.y + (blY - helixLook.y) * bt;
-    lookZ = helixLook.z + (blZ - helixLook.z) * bt;
-
-    // Gradually illuminate all basement torches as we enter
-    torchData.forEach(td2=>{
-      if(td2.isBasement) td2.light.intensity = bt * 3.5 * (0.8 + Math.sin(clock*8)*0.2);
+    const raw=(clampedT-HELIX_END)/(1-HELIX_END);
+    const bt=raw*raw*(3-2*raw);
+    const he=camPath.getPoint(0.999);
+    camX=he.x+(0-he.x)*bt; camY=he.y+(BSMT_EYE_Y-he.y)*bt; camZ=he.z+(2.5-he.z)*bt;
+    lookX=he.x*(1-bt); lookY=he.y+(BSMT_EYE_Y-0.1-he.y)*bt; lookZ=he.z+(-(BSMT_R-1.5)-he.z)*bt;
+    torchData.forEach(td=>{
+      if(td.isBasement) td.light.intensity=bt*3.5*(0.8+Math.sin(clock*8)*0.2);
     });
   }
-
-  camera.position.set(camX, camY, camZ);
+  camera.position.set(camX,camY,camZ);
   camera.up.set(0,1,0);
-  camera.lookAt(lookX, lookY, lookZ);
-
-  // Lantern follows camera
+  camera.lookAt(lookX,lookY,lookZ);
   lantern.position.copy(camera.position);
 
-  // Torch flicker + proximity brightness (staircase torches only)
-  torchData.forEach(({light,flame,stepT,isBasement},idx)=>{
-    if(isBasement) return; // basement torches handled separately above
-    const dist = Math.abs(camT - stepT);
-    const prox = Math.max(0, 1 - dist/0.18);
-    const flicker = 0.78 + Math.sin(clock*(7+idx*0.7))*0.13 + Math.sin(clock*14.3*(idx+1))*0.06;
-    light.intensity = prox * 4.5 * flicker;
+  // ── TORCH FLICKER (staircase only) ──────────
+  torchData.forEach((td,idx)=>{
+    if(td.isBasement) return;
+    const dist=Math.abs(camT-td.stepT);
+    const prox=Math.max(0,1-dist/0.18);
+    const flicker=0.78+Math.sin(clock*(7+idx*.7))*.13+Math.sin(clock*14.3*(idx+1))*.06;
+    td.light.intensity=prox*4.5*flicker;
 
-    // Flame scale + color flicker
-    const fs = 0.7 + Math.sin(clock*10+idx)*0.22;
-    flame.scale.setScalar(fs);
-    const r = 1.0;
-    const g = 0.4 + Math.sin(clock*9+idx)*0.15;
-    flame.material.color.setRGB(r, g, 0.05);
+    // Update InstancedMesh flame scale via matrix
+    const fs=0.7+Math.sin(clock*10+idx)*.22;
+    _sc.makeScale(fs,fs,fs);
+    // get current position from instance matrix
+    td.instMesh.getMatrixAt(td.instIdx, _m4);
+    _m4.decompose(_sv, _sq, new THREE.Vector3());
+    const pos=_sv.clone();
+    _m4.compose(pos, _sq, new THREE.Vector3(fs,fs,fs));
+    td.instMesh.setMatrixAt(td.instIdx, _m4);
+    // Color flicker via material color (shared, gives global flicker — intentional)
+    const g=0.4+Math.sin(clock*9)*.12;
+    flameMat.color.setRGB(1,g,0.05);
   });
+  flameInst.instanceMatrix.needsUpdate=true;
 
-  // Animate dust particles
-  const pa = dustGeo.attributes.position;
-  for(let i=0;i<dustCount;i++){
-    pa.array[i*3]  += dustVel[i*3]   * (0.5+Math.sin(clock+i)*0.5);
-    pa.array[i*3+1]+= dustVel[i*3+1];
-    pa.array[i*3+2]+= dustVel[i*3+2] * (0.5+Math.cos(clock*0.7+i)*0.5);
-    // Wrap Y: if particle rises above shaft top, teleport to bottom
-    if(pa.array[i*3+1]>5){
-      pa.array[i*3+1] = -(DESCENT+4);
+  // ── DUST ────────────────────────────────────
+  // Only update every other frame on low-end
+  if(!isLowEnd || Math.round(clock*30)%2===0){
+    const pa=dustGeo.attributes.position;
+    for(let i=0;i<DC;i++){
+      pa.array[i*3]  +=dustVel[i*3]*(0.5+Math.sin(clock+i)*.5);
+      pa.array[i*3+1]+=dustVel[i*3+1];
+      pa.array[i*3+2]+=dustVel[i*3+2]*(0.5+Math.cos(clock*.7+i)*.5);
+      if(pa.array[i*3+1]>5) pa.array[i*3+1]=-(DESCENT+4);
     }
+    pa.needsUpdate=true;
   }
-  pa.needsUpdate = true;
 
-  updateUI(camT, scrollProg);
-  renderer.render(scene, camera);
+  updateUI(camT,scrollProg);
+  renderer.render(scene,camera);
 }
-animate();
+requestAnimationFrame(animate);
 
-// ══════════════════════════════════════════════
-//   RESIZE
-// ══════════════════════════════════════════════
+// ── RESIZE ────────────────────────────────────
 window.addEventListener('resize',()=>{
-  camera.aspect = innerWidth/innerHeight;
+  camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(innerWidth,innerHeight);
+  lastActivityTime=Date.now(); renderPaused=false;
 });
 
-// ══════════════════════════════════════════════
-//   JUMP TO SECTION
-// ══════════════════════════════════════════════
+// ── JUMP TO SECTION ───────────────────────────
 function jumpToSection(idx){
-  const ms = document.documentElement.scrollHeight - innerHeight;
+  const ms=document.documentElement.scrollHeight-innerHeight;
   let target=0;
   if(idx===0) target=0;
   else if(idx===7) target=ms;
-  else{
-    // idx 1-6 → sections 0-5
-    const sec = sectionPanels[idx-1];
-    // sec.t → camT; camT = (sp-0.05)/0.9 → sp = camT*0.9+0.05
-    const sp = sec.t*0.9+0.05;
-    target = sp*ms;
-  }
+  else{ const sec=sectionPanels[idx-1]; target=(sec.t*0.9+0.05)*ms; }
   window.scrollTo({top:target,behavior:'smooth'});
 }
 
-// ══════════════════════════════════════════════
-//   TYPING ANIMATION
-// ══════════════════════════════════════════════
+// ── TYPING ANIMATION ──────────────────────────
 const phrases=['Computer Science Engineering Student','Data Science Enthusiast','Data Analysis & Visualisation','Problem Solver & Builder'];
-let pi=0,ci=0,del=false;
+let pi2=0,ci=0,del=false;
 const tEl=document.getElementById('typing');
 function typeLoop(){
-  const ph=phrases[pi];
-  if(!del){tEl.textContent=ph.substring(0,ci+1);ci++;
-    if(ci===ph.length){del=true;setTimeout(typeLoop,2000);return;}}
-  else{tEl.textContent=ph.substring(0,ci-1);ci--;
-    if(ci===0){del=false;pi=(pi+1)%phrases.length;}}
+  const ph=phrases[pi2];
+  if(!del){tEl.textContent=ph.substring(0,ci+1);ci++;if(ci===ph.length){del=true;setTimeout(typeLoop,2000);return;}}
+  else{tEl.textContent=ph.substring(0,ci-1);ci--;if(ci===0){del=false;pi2=(pi2+1)%phrases.length;}}
   setTimeout(typeLoop,del?42:70);
 }
-setTimeout(typeLoop,800);
+setTimeout(typeLoop,1800); // start after loader fades
 
-// ══════════════════════════════════════════════
-//   CUSTOM CURSOR
-// ══════════════════════════════════════════════
-const cur=document.getElementById('cur');
-const curR=document.getElementById('cur-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{
-  mx=e.clientX;my=e.clientY;
-  cur.style.left=mx+'px';cur.style.top=my+'px';
-});
-(function loop(){
-  rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;
-  curR.style.left=rx+'px';curR.style.top=ry+'px';
-  requestAnimationFrame(loop);
-})();
+// ── CUSTOM CURSOR (desktop only) ─────────────
+// ── CUSTOM CURSOR + TRAIL (desktop only) ────
+if(!isMobile){
+  const cur  = document.getElementById('cur');
+  const curR = document.getElementById('cur-ring');
 
-// ══════════════════════════════════════════════
-//   TERMINAL EASTER EGG
-// ══════════════════════════════════════════════
+  // Shared mouse position — single source of truth
+  let mouseX = -200, mouseY = -200;
+  let ringX  = -200, ringY  = -200;
+  let cursorVisible = false;
+
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    if(!cursorVisible){
+      // Snap into place on first move
+      ringX = mouseX; ringY = mouseY;
+      cur.style.opacity  = '1';
+      curR.style.opacity = '1';
+      cursorVisible = true;
+    }
+    cur.style.left = mouseX + 'px';
+    cur.style.top  = mouseY + 'px';
+  });
+
+  // Hide custom cursor when mouse leaves window
+  document.addEventListener('mouseleave', () => {
+    cur.style.opacity  = '0';
+    curR.style.opacity = '0';
+    cursorVisible = false;
+  });
+  document.addEventListener('mouseenter', () => {
+    cur.style.opacity  = '1';
+    curR.style.opacity = '1';
+    cursorVisible = true;
+  });
+
+  // Ring smoothly follows via rAF lerp
+  (function ringLoop(){
+    ringX += (mouseX - ringX) * 0.12;
+    ringY += (mouseY - ringY) * 0.12;
+    curR.style.left = ringX + 'px';
+    curR.style.top  = ringY + 'px';
+    requestAnimationFrame(ringLoop);
+  })();
+
+  // ── CURSOR TRAIL ──────────────────────────
+  const TRAIL = 7;
+  const trailPos = Array.from({length: TRAIL}, () => ({x: -200, y: -200}));
+  const trailDots = [];
+  const container = document.getElementById('trail-container');
+
+  for(let i = 0; i < TRAIL; i++){
+    const d = document.createElement('div');
+    d.className = 'trail-dot';
+    const scale = 1 - i / TRAIL;
+    const size  = 3 + scale * 4;
+    d.style.cssText = `width:${size}px;height:${size}px;opacity:${(1 - i / TRAIL) * 0.5};background:hsl(${28 + i * 5},88%,${52 + i * 3}%);`;
+    container.appendChild(d);
+    trailDots.push(d);
+  }
+
+  (function trailLoop(){
+    // Trail[0] chases mouse, each subsequent chases the one before
+    trailPos[0].x += (mouseX - trailPos[0].x) * 0.30;
+    trailPos[0].y += (mouseY - trailPos[0].y) * 0.30;
+    for(let i = 1; i < TRAIL; i++){
+      const speed = 0.25 - i * 0.02;
+      trailPos[i].x += (trailPos[i-1].x - trailPos[i].x) * speed;
+      trailPos[i].y += (trailPos[i-1].y - trailPos[i].y) * speed;
+    }
+    trailDots.forEach((d, i) => {
+      d.style.left = trailPos[i].x + 'px';
+      d.style.top  = trailPos[i].y + 'px';
+    });
+    requestAnimationFrame(trailLoop);
+  })();
+}
+
+// ═══════════════════════════════════════════════
+//   TERMINAL
+// ═══════════════════════════════════════════════
 const CMDS={
   help:`Commands available in this dungeon:
   help             — Show this scroll
@@ -1553,188 +1611,176 @@ const CMDS={
         → Python · Pandas · Scikit-learn · Linear Regression
         → github.com/Amit-Krishna/Python-Visualization-Data-Science-Project`,
   skills:`⚔ Arsenal:
-  
   Languages:  C++  Python  Java  C
   Frameworks: Scikit-learn  HTML  CSS  Next.js
   Databases:  MySQL  Supabase
-  Tools:      Git  GitHub  VS Code  Anaconda
-              Figma  Excel  Power BI`,
+  Tools:      Git  GitHub  VS Code  Anaconda  Figma  Excel  Power BI`,
   contact:`✦ Contact Runes:
-  
   Email:    amit.krishna.11d@gmail.com
   GitHub:   github.com/Amit-Krishna
   LinkedIn: linkedin.com/in/amit-krishna/
-  LeetCode: leetcode.com/u/Amit-Krishna/
-  Location: Punjab, India`,
+  LeetCode: leetcode.com/u/Amit-Krishna/`,
   education:`📜 The Scrolls:
-  
   B.Tech CSE  |  LPU Punjab    |  CGPA 8.63  |  2023–Present
   Intermediate|  Montfort IC   |  75%        |  2023
   Matric      |  CMS Cambridge |  89%        |  2021`,
   whoami:`◈ Identity Revealed:
-  ──────────────────────────────────────────
   Name:   Amit Krishna
   Role:   CS Engineer & Data Science Student
   Focus:  Data Analysis · Visualisation · Systems
-  Base:   Punjab, India
-  Status: Open to opportunities
-  CGPA:   8.63 @ LPU`
+  Base:   Punjab, India · CGPA: 8.63 @ LPU`
 };
-
-function openTerm(){
-  document.getElementById('terminal').classList.add('open');
-  document.getElementById('ti').focus();
-}
-function closeTerm(){
-  document.getElementById('terminal').classList.remove('open');
-}
+function openTerm(){ document.getElementById('terminal').classList.add('open'); document.getElementById('ti').focus(); }
+function closeTerm(){ document.getElementById('terminal').classList.remove('open'); }
 document.addEventListener('keydown',e=>{
-  if(e.key==='`'){e.preventDefault();
-    const t=document.getElementById('terminal');
-    t.classList.contains('open')?closeTerm():openTerm();}
+  if(e.key==='`'){e.preventDefault(); const t=document.getElementById('terminal'); t.classList.contains('open')?closeTerm():openTerm();}
   if(e.key==='Escape') closeTerm();
 });
-const ti=document.getElementById('ti');
-const tb=document.getElementById('term-body');
+const ti=document.getElementById('ti'), tb=document.getElementById('term-body');
 ti.addEventListener('keydown',e=>{
   if(e.key!=='Enter') return;
-  const cmd=ti.value.trim().toLowerCase();
-  addLine(`<span style="color:#00d050">amit@dungeon:~$</span> ${cmd}`,'tl');
-  ti.value='';
+  const cmd=ti.value.trim().toLowerCase(); addLine(`<span style="color:#00d050">amit@dungeon:~$</span> ${cmd}`,'tl'); ti.value='';
   if(!cmd) return;
-
-  // Special: download resume
   if(cmd==='download resume'){
     addLine('Initializing download sequence...','ts2');
-    setTimeout(()=>{
-      const lnk=document.createElement('a');
-      lnk.href='CVVVV.pdf'; lnk.download='Amit_Krishna_CV.pdf'; lnk.click();
-      addLine('<span style="color:#00d050">✓ Success:</span> Resume downloaded to local system.','tl');
-      addLine(' ','to'); tb.scrollTop=tb.scrollHeight;
-    },1000);
+    setTimeout(()=>{ const l=document.createElement('a'); l.href='CVVVV.pdf'; l.download='Amit_Krishna_CV.pdf'; l.click(); addLine('<span style="color:#00d050">✓ Resume downloaded.</span>','tl'); addLine(' ','to'); tb.scrollTop=tb.scrollHeight; },1000);
     return;
   }
-
   if(cmd==='clear'){tb.innerHTML='<div class="to"> </div>';return;}
-  if(cmd==='exit'){addLine('Sealing the terminal...','ts2');setTimeout(closeTerm,600);return;}
+  if(cmd==='exit'){addLine('Sealing terminal...','ts2');setTimeout(closeTerm,600);return;}
   if(CMDS[cmd]) addLine(CMDS[cmd],'to');
-  else addLine(`Command not found: '${cmd}'. Type 'help' for available commands.`,'te');
-  addLine(' ','to');
-  tb.scrollTop=tb.scrollHeight;
+  else addLine(`Command not found: '${cmd}'. Type 'help'.`,'te');
+  addLine(' ','to'); tb.scrollTop=tb.scrollHeight;
 });
-function addLine(html,cls){
-  const d=document.createElement('div');d.className=cls;d.innerHTML=html;
-  tb.appendChild(d);tb.scrollTop=tb.scrollHeight;
-}
+function addLine(html,cls){ const d=document.createElement('div'); d.className=cls; d.innerHTML=html; tb.appendChild(d); tb.scrollTop=tb.scrollHeight; }
 
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //   LOADING SCREEN
-// ══════════════════════════════════════════════
-(function runLoader(){
-  const bar  = document.getElementById('loader-bar');
-  const pct  = document.getElementById('loader-pct');
-  const loader = document.getElementById('loader');
-  let p = 0;
-  // Simulate texture generation progress over ~1.8s
-  const steps = [
-    {target:30, ms:300},
-    {target:60, ms:400},
-    {target:85, ms:350},
-    {target:100,ms:300},
-  ];
-  let si = 0;
-  function nextStep(){
-    if(si>=steps.length){
-      // Done — fade out
-      setTimeout(()=>{
-        loader.classList.add('fade-out');
-        setTimeout(()=>{ loader.style.display='none'; },1050);
-      },200);
-      return;
-    }
-    const {target,ms} = steps[si++];
-    const frames = Math.ceil(ms/16);
-    const step = (target-p)/frames;
-    let f=0;
-    function tick(){
-      p = Math.min(target, p+step);
-      bar.style.width = p+'%';
-      pct.textContent = Math.floor(p)+'%';
-      if(++f<frames && p<target){ requestAnimationFrame(tick); }
-      else{ nextStep(); }
-    }
+// ═══════════════════════════════════════════════
+(function(){
+  const bar=document.getElementById('loader-bar'), pct=document.getElementById('loader-pct'), loader=document.getElementById('loader');
+  let p=0; const steps=[{t:35,ms:300},{t:65,ms:350},{t:88,ms:300},{t:100,ms:250}]; let si=0;
+  function nxt(){
+    if(si>=steps.length){ setTimeout(()=>{ loader.classList.add('fade-out'); setTimeout(()=>{loader.style.display='none';},1050); },150); return; }
+    const {t,ms}=steps[si++]; const frames=Math.ceil(ms/16); const step=(t-p)/frames; let f=0;
+    function tick(){ p=Math.min(t,p+step); bar.style.width=p+'%'; pct.textContent=Math.floor(p)+'%'; if(++f<frames&&p<t){requestAnimationFrame(tick);}else{nxt();} }
     requestAnimationFrame(tick);
   }
-  nextStep();
+  nxt();
 })();
 
-// ══════════════════════════════════════════════
-//   FAST TRAVEL / QUICK VIEW TOGGLE
-// ══════════════════════════════════════════════
-let currentView = '3d';
+// ═══════════════════════════════════════════════
+//   FAST TRAVEL TOGGLE
+// ═══════════════════════════════════════════════
 function setView(mode){
-  currentView = mode;
-  const qv = document.getElementById('quick-view');
-  document.getElementById('btn-3d').classList.toggle('active', mode==='3d');
-  document.getElementById('btn-2d').classList.toggle('active', mode==='2d');
-  if(mode==='2d'){
-    qv.classList.add('open');
-    qv.scrollTop = 0;
-  } else {
-    qv.classList.remove('open');
-  }
+  const qv=document.getElementById('quick-view');
+  document.getElementById('btn-3d').classList.toggle('active',mode==='3d');
+  document.getElementById('btn-2d').classList.toggle('active',mode==='2d');
+  if(mode==='2d'){qv.classList.add('open');qv.scrollTop=0;}
+  else qv.classList.remove('open');
 }
 
-// ══════════════════════════════════════════════
-//   AMBIENT SOUND (opt-in)
-// ══════════════════════════════════════════════
-let audioCtx = null, droneNode = null, soundOn = false;
+// ═══════════════════════════════════════════════
+//   AMBIENT SOUND (opt-in, Web Audio API)
+// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//   2. HERO PARALLAX — mouse moves back/front layers
+// ═══════════════════════════════════════════════
+(function(){
+  const back=document.getElementById('hero-back'),front=document.getElementById('hero-front');
+  if(!back||!front||isMobile)return;
+  let tx=0,ty=0,cx=0,cy=0;
+  document.addEventListener('mousemove',e=>{tx=(e.clientX/innerWidth-.5)*22;ty=(e.clientY/innerHeight-.5)*14;});
+  (function lp(){
+    cx+=(tx-cx)*.06;cy+=(ty-cy)*.06;
+    back.style.transform=`translateX(${cx*1.6}px) translateY(${cy*1.2}px)`;
+    front.style.transform=`translateX(${-cx*.4}px) translateY(${-cy*.3}px)`;
+    requestAnimationFrame(lp);
+  })();
+})();
 
+// ═══════════════════════════════════════════════
+//   6. SECTION TRANSITION STING (bell tone + screen flash)
+// ═══════════════════════════════════════════════
+let lastActivePanel=-1;
+const stingFlash=document.getElementById('sting-flash');
+const pitches=[440,494,523,587,659,698];
+
+function playSting(freq){
+  if(!soundOn) return;  // respect mute state
+  try{
+    const ctx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;
+    osc.type='sine';osc.frequency.setValueAtTime(freq,t);osc.frequency.exponentialRampToValueAtTime(freq*.5,t+.8);
+    g.gain.setValueAtTime(0.10,t);g.gain.exponentialRampToValueAtTime(0.0001,t+1.0);
+    osc.connect(g);g.connect(ctx.destination);osc.start(t);osc.stop(t+1.0);
+  }catch(e){}
+}
+
+function triggerSting(idx){
+  if(idx===lastActivePanel)return;
+  lastActivePanel=idx;
+  stingFlash.style.opacity='1';setTimeout(()=>{stingFlash.style.opacity='0';},120);
+  // Re-trigger panel spring animation
+  const el=sectionPanels[idx]?.el;
+  if(el){el.classList.remove('active');void el.offsetWidth;el.classList.add('active');}
+  playSting(pitches[idx]||440);
+}
+
+// Hook into scroll to check for new active sections
+let _stingTimer=null;
+window.addEventListener('scroll',()=>{
+  if(_stingTimer)return;
+  _stingTimer=setInterval(()=>{
+    sectionPanels.forEach((sec,idx)=>{if(Math.abs(camT-sec.t)<0.04)triggerSting(idx);});
+  },80);
+  setTimeout(()=>{clearInterval(_stingTimer);_stingTimer=null;},2200);
+},{passive:true});
+
+// ═══════════════════════════════════════════════
+//   7. MOBILE SWIPE GESTURES
+// ═══════════════════════════════════════════════
+(function(){
+  if(!isMobile)return;
+  let sY=0,sT=0;
+  document.addEventListener('touchstart',e=>{sY=e.touches[0].clientY;sT=Date.now();},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dy=sY-e.changedTouches[0].clientY,dt=Date.now()-sT;
+    if(dt>400||Math.abs(dy)<55)return;
+    const ms=document.documentElement.scrollHeight-innerHeight;
+    const snaps=[0,...sectionPanels.map(s=>s.t*0.9+0.05),0.97].map(p=>p*ms);
+    const cur=window.scrollY,dir=dy>0?1:-1;
+    let ci=0;snaps.forEach((s,i)=>{if(cur>=s-60)ci=i;});
+    const ni=Math.max(0,Math.min(snaps.length-1,ci+dir));
+    if(ni!==ci)window.scrollTo({top:snaps[ni],behavior:'smooth'});
+  },{passive:true});
+})();
+
+let audioCtx=null,masterGain=null,soundOn=false;
 function toggleSound(){
-  const btn = document.getElementById('sound-btn');
+  const btn=document.getElementById('sound-btn');
   if(!soundOn){
-    // Build a simple cave drone with Web Audio API — no file dependency
-    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-    // Low rumble: two detuned oscillators through a low-pass + gain
-    const masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime+2);
+    audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+    masterGain=audioCtx.createGain(); masterGain.gain.setValueAtTime(0,audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.05,audioCtx.currentTime+2);
     masterGain.connect(audioCtx.destination);
-
-    const freqs = [55, 58.3, 82.4, 110];
-    freqs.forEach((f,i)=>{
-      const osc = audioCtx.createOscillator();
-      const g   = audioCtx.createGain();
-      const lp  = audioCtx.createBiquadFilter();
-      osc.type = i<2?'sine':'triangle';
-      osc.frequency.setValueAtTime(f, audioCtx.currentTime);
-      g.gain.setValueAtTime(0.2+i*0.05, audioCtx.currentTime);
-      lp.type='lowpass'; lp.frequency.setValueAtTime(200,audioCtx.currentTime);
-      osc.connect(g); g.connect(lp); lp.connect(masterGain);
-      osc.start();
+    [55,58.3,82.4,110].forEach((f,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain(),lp=audioCtx.createBiquadFilter();
+      o.type=i<2?'sine':'triangle'; o.frequency.setValueAtTime(f,audioCtx.currentTime);
+      g.gain.setValueAtTime(0.2+i*.05,audioCtx.currentTime);
+      lp.type='lowpass'; lp.frequency.setValueAtTime(180,audioCtx.currentTime);
+      o.connect(g);g.connect(lp);lp.connect(masterGain);o.start();
     });
-
-    // Subtle crackle: filtered noise
-    const bufSize = audioCtx.sampleRate*2;
-    const buf = audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i=0;i<bufSize;i++) data[i]=(Math.random()*2-1)*0.015;
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buf; noise.loop = true;
-    const noiseLp = audioCtx.createBiquadFilter();
-    noiseLp.type='bandpass'; noiseLp.frequency.setValueAtTime(80,audioCtx.currentTime); noiseLp.Q.setValueAtTime(0.5,audioCtx.currentTime);
-    noise.connect(noiseLp); noiseLp.connect(masterGain);
-    noise.start();
-
-    droneNode = masterGain;
-    soundOn = true;
-    btn.textContent = '🔊';
+    const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*.012;
+    const ns=audioCtx.createBufferSource(); ns.buffer=buf; ns.loop=true;
+    const nlp=audioCtx.createBiquadFilter(); nlp.type='bandpass'; nlp.frequency.setValueAtTime(80,audioCtx.currentTime);
+    ns.connect(nlp);nlp.connect(masterGain);ns.start();
+    soundOn=true; btn.textContent='🔊';
   } else {
-    if(droneNode){
-      droneNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
-      setTimeout(()=>{ audioCtx.close(); audioCtx=null; droneNode=null; },1600);
-    }
-    soundOn = false;
-    btn.textContent = '🔇';
+    masterGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+1.5);
+    setTimeout(()=>{audioCtx.close();audioCtx=null;masterGain=null;},1600);
+    soundOn=false; btn.textContent='🔇';
   }
 }
 </script>
